@@ -1,5 +1,34 @@
 # Deploy na Hostinger
 
+## Produção atual (já no ar)
+
+- **URL:** https://ponto.gestaosystem.tech  (SSL Let's Encrypt via Traefik)
+- **VPS:** `1741392` (KVM 1) — projeto Docker Compose `relogio-ponto` em `/docker/relogio-ponto/`
+- **Imagem:** `ghcr.io/b1ernardo/relogio-ponto:latest`, buildada pelo GitHub Actions
+  (`.github/workflows/build-and-push`) a cada push na branch `main` do repo `b1ernardo/ponto`
+- **Porta:** container `3000` → host `3025` (Traefik roteia por `Host(ponto.gestaosystem.tech)`)
+- **Dados persistentes:** volume Docker `relogioponto_data` montado em `/data`
+  (banco `relogio-ponto.db` + `uploads/`)
+- **Login admin:** `b1ernardo@gmail.com` (senha definida no deploy; troque em **Empresa → Administradores**)
+
+### Atualizar a aplicação
+
+```bash
+git push origin main          # GitHub Actions publica a nova imagem no GHCR
+```
+Depois, no hPanel → VPS → Docker → projeto `relogio-ponto` → **Redeploy** (ou recriar o
+projeto pelo mesmo docker-compose.yml). Isso puxa a imagem `:latest` e recria o container;
+o volume `relogioponto_data` é preservado.
+
+### Observação
+
+A sessão do admin usa `MemoryStore` (reinício do container = admins precisam logar de novo).
+Não afeta batidas de ponto nem relatórios. Para sessão persistente, adicionar um store
+(ex.: `connect-sqlite3`) em `src/server.js`.
+
+---
+
+
 O reconhecimento facial exige **HTTPS** (o navegador só libera a câmera em contexto seguro).
 A Hostinger oferece SSL grátis nos dois cenários abaixo.
 
