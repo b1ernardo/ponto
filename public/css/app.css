@@ -90,6 +90,10 @@ input[type=checkbox]{width:auto}
 .kiosk .result-name{font-size:30px;font-weight:700}
 .kiosk .setup{background:#fff;color:var(--ink);max-width:400px;padding:26px;border-radius:14px}
 .kiosk-link{position:fixed;bottom:8px;right:12px;font-size:12px;color:rgba(255,255,255,.5)}
+.kiosk-install{position:fixed;top:10px;left:12px;z-index:40;background:rgba(255,255,255,.15);
+  color:#fff;border:1px solid rgba(255,255,255,.3);padding:8px 14px;border-radius:999px;
+  font:inherit;font-size:14px;cursor:pointer}
+.kiosk-install:active{background:rgba(255,255,255,.28)}
 
 /* ---- janela de confirmação do kiosk ---- */
 .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;

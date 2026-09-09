@@ -1,5 +1,5 @@
 /* Service worker do Relógio de Ponto (PWA) */
-const CACHE = 'ponto-v3';
+const CACHE = 'ponto-v4';
 const PRECACHE = [
   '/public/icons/icon-192.png',
   '/public/icons/icon-512.png',
