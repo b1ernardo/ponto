@@ -1,5 +1,6 @@
 import express from 'express';
 import session from 'express-session';
+import { SqliteStore } from './services/session-store.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,9 +34,11 @@ app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 app.use('/uploads', express.static(config.uploadDir));
 
 app.use(session({
+  store: new SqliteStore(),
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
+  rolling: true,
   cookie: {
     httpOnly: true,
     secure: config.secureCookies,

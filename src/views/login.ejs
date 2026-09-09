@@ -5,10 +5,13 @@
   <% if (error) { %><div class="alert err"><%= error %></div><% } %>
   <form method="post" action="/login">
     <label>E-mail</label>
-    <input type="email" name="email" required autofocus>
+    <input type="email" name="email" required autofocus autocomplete="username">
     <label>Senha</label>
-    <input type="password" name="password" required>
-    <button class="btn" style="width:100%;margin-top:16px">Entrar</button>
+    <input type="password" name="password" required autocomplete="current-password">
+    <label style="display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;margin-top:12px">
+      <input type="checkbox" name="remember" value="1" checked> Manter-me conectado neste dispositivo
+    </label>
+    <button class="btn" style="width:100%;margin-top:14px">Entrar</button>
   </form>
   <button id="pwa-install" class="btn sec" style="width:100%;margin-top:10px" hidden>📲 Instalar app</button>
 </div>

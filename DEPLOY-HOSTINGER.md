@@ -22,9 +22,8 @@ o volume `relogioponto_data` é preservado.
 
 ### Observação
 
-A sessão do admin usa `MemoryStore` (reinício do container = admins precisam logar de novo).
-Não afeta batidas de ponto nem relatórios. Para sessão persistente, adicionar um store
-(ex.: `connect-sqlite3`) em `src/server.js`.
+A sessão do admin é persistida no próprio SQLite (`SqliteStore`), então "Manter-me
+conectado" sobrevive a reinícios/deploys do container.
 
 ---
 

@@ -16,7 +16,11 @@ authRouter.post('/login', (req, res) => {
     return res.status(401).render('login', { error: 'E-mail ou senha invalidos.' });
   }
   req.session.adminId = admin.id;
-  audit(admin.id, 'login', admin.email, req.ip);
+  // "manter-me conectado": 30 dias; senão, 12 h
+  req.session.cookie.maxAge = req.body.remember
+    ? 1000 * 60 * 60 * 24 * 30
+    : 1000 * 60 * 60 * 12;
+  audit(admin.id, 'login', admin.email + (req.body.remember ? ' (manter conectado)' : ''), req.ip);
   res.redirect('/');
 });
 
