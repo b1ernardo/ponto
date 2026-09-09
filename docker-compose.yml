@@ -1,6 +1,8 @@
 services:
   app:
-    image: ghcr.io/b1ernardo/relogio-ponto:latest
+    build:
+      context: "https://github.com/b1ernardo/relogio-ponto.git#main"
+    image: relogio-ponto:latest
     labels:
       - traefik.enable=true
       - traefik.http.routers.relogioponto.rule=Host(`ponto.gestaosystem.tech`)
