@@ -53,6 +53,7 @@ export function mirrorPdf(report, res) {
   for (const d of report.days) {
     const marks = d.punches.map((p) => p.punched_at.slice(11, 16)).join('  ') || '--';
     const obs = [
+      d.certificate ? `ATESTADO${d.certificate.cid ? ' ' + d.certificate.cid : ''}` : '',
       d.isAbsence ? 'FALTA' : '',
       d.inconsistent ? 'INCONSISTENTE' : '',
       d.lateMin > 0 ? `atraso ${minToHm(d.lateMin)}` : '',

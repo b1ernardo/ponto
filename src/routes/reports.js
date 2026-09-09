@@ -37,7 +37,7 @@ reportsRouter.get('/mirror', (req, res) => {
       report.days.map((d) => [
         d.date, d.expectedHm, d.workedHm, d.balanceHm, minToHm(d.lateMin), minToHm(d.overtimeMin),
         d.punches.map((p) => p.punched_at.slice(11, 16)).join(' '),
-        [d.isAbsence ? 'FALTA' : '', d.inconsistent ? 'INCONSISTENTE' : ''].filter(Boolean).join(' '),
+        [d.certificate ? 'ATESTADO' : '', d.isAbsence ? 'FALTA' : '', d.inconsistent ? 'INCONSISTENTE' : ''].filter(Boolean).join(' '),
       ]));
   }
 
@@ -50,10 +50,10 @@ reportsRouter.get('/summary', (req, res) => {
   const rows = summaryReport(start, end);
   if (req.query.format === 'csv') {
     return csv(res, `resumo-${start}_${end}.csv`,
-      ['Matricula', 'Funcionario', 'Previsto', 'Trabalhado', 'Saldo', 'Atrasos', 'Extras', 'Faltas', 'Inconsistencias'],
+      ['Matricula', 'Funcionario', 'Previsto', 'Trabalhado', 'Saldo', 'Atrasos', 'Extras', 'Faltas', 'Atestados', 'Inconsistencias'],
       rows.map((r) => [
         r.employee.registration, r.employee.name, r.totals.expectedHm, r.totals.workedHm,
-        r.totals.balanceHm, r.totals.lateHm, r.totals.overtimeHm, r.totals.absences, r.totals.inconsistencies,
+        r.totals.balanceHm, r.totals.lateHm, r.totals.overtimeHm, r.totals.absences, r.totals.justified, r.totals.inconsistencies,
       ]));
   }
   res.render('reports/summary', { rows, start, end });

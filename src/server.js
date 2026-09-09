@@ -14,6 +14,7 @@ import { devicesRouter } from './routes/devices.js';
 import { punchRouter } from './routes/punch.js';
 import { reportsRouter } from './routes/reports.js';
 import { afdRouter } from './routes/afd.js';
+import { certificatesRouter } from './routes/certificates.js';
 import { companyRouter } from './routes/company.js';
 import { db } from './db.js';
 import { config as _cfg } from './config.js';
@@ -80,6 +81,7 @@ app.use('/schedules', schedulesRouter);
 app.use('/devices', devicesRouter);
 app.use('/reports', reportsRouter);
 app.use('/afd', afdRouter);
+app.use('/certificates', certificatesRouter);
 app.use('/company', companyRouter);
 
 app.use((req, res) => res.status(404).render('error', { code: 404, message: 'Pagina nao encontrada' }));

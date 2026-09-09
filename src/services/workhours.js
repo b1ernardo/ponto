@@ -55,10 +55,17 @@ export function employeeReport(employeeId, start, end) {
   const byDate = {};
   for (const r of rows) (byDate[isoDate(r.punched_at)] ||= []).push(r);
 
+  // atestados / justificativas que cobrem o periodo
+  const certs = db.prepare(
+    `SELECT id, kind, start_date, end_date, cid, notes FROM certificates
+     WHERE employee_id = ? AND NOT (end_date < ? OR start_date > ?)`,
+  ).all(employeeId, start, end);
+  const certForDate = (date) => certs.find((c) => date >= c.start_date && date <= c.end_date) || null;
+
   const days = [];
   const totals = {
     workedMin: 0, expectedMin: 0, balanceMin: 0,
-    lateMin: 0, earlyLeaveMin: 0, overtimeMin: 0, absences: 0, inconsistencies: 0,
+    lateMin: 0, earlyLeaveMin: 0, overtimeMin: 0, absences: 0, inconsistencies: 0, justified: 0,
   };
 
   for (const date of eachDay(start, end)) {
@@ -79,12 +86,20 @@ export function employeeReport(employeeId, start, end) {
     }
 
     const expectedMin = s.expectedMin;
-    const balanceMin = workedMin - expectedMin;
-    const overtimeMin = balanceMin > tolerance ? balanceMin : 0;
-    const isAbsence = expectedMin > 0 && count === 0;
-    const inconsistent = odd; // numero impar de batidas
+    const cert = certForDate(date);
+
+    // atestado/abono cobre o dia: não é falta e o saldo do dia fica neutro
+    let balanceMin = workedMin - expectedMin;
+    let overtimeMin = balanceMin > tolerance ? balanceMin : 0;
+    let isAbsence = expectedMin > 0 && count === 0;
+    if (cert) {
+      isAbsence = false;
+      if (count === 0) { balanceMin = 0; overtimeMin = 0; lateMin = 0; earlyLeaveMin = 0; }
+    }
+    const inconsistent = odd && !cert; // numero impar de batidas
 
     if (isAbsence) totals.absences++;
+    if (cert) totals.justified++;
     if (inconsistent) totals.inconsistencies++;
     totals.workedMin += workedMin;
     totals.expectedMin += expectedMin;
@@ -95,7 +110,7 @@ export function employeeReport(employeeId, start, end) {
 
     days.push({
       date, weekday: wd, expectedMin, workedMin, balanceMin,
-      lateMin, earlyLeaveMin, overtimeMin, isAbsence, inconsistent,
+      lateMin, earlyLeaveMin, overtimeMin, isAbsence, inconsistent, certificate: cert,
       pairs, punches,
       workedHm: minToHm(workedMin), expectedHm: minToHm(expectedMin), balanceHm: minToHm(balanceMin),
     });

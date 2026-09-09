@@ -92,6 +92,23 @@ CREATE TABLE IF NOT EXISTS audit_log (
   ip         TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS certificates (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  employee_id INTEGER NOT NULL REFERENCES employees(id),
+  kind        TEXT NOT NULL DEFAULT 'atestado',  -- atestado | declaracao | licenca | abono | ferias
+  start_date  TEXT NOT NULL,                     -- 'YYYY-MM-DD'
+  end_date    TEXT NOT NULL,                     -- 'YYYY-MM-DD' (inclusive)
+  days        INTEGER NOT NULL DEFAULT 1,
+  cid         TEXT NOT NULL DEFAULT '',
+  doctor      TEXT NOT NULL DEFAULT '',
+  crm         TEXT NOT NULL DEFAULT '',
+  notes       TEXT NOT NULL DEFAULT '',
+  file_path   TEXT,
+  created_by  INTEGER REFERENCES admins(id),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_cert_emp_date ON certificates(employee_id, start_date, end_date);
 `);
 
 // Linha unica da empresa

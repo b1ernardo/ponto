@@ -1,0 +1,43 @@
+<%- include('../partials/header', { title: 'Atestados' }) %>
+<h1>Atestados e justificativas</h1>
+<p class="sub">Dias cobertos por atestado não contam como falta nos relatórios.</p>
+<% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
+
+<div class="toolbar">
+  <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;flex:1">
+    <div><label>Mês</label><input type="month" name="month" value="<%= month %>"></div>
+    <div><label>Funcionário</label>
+      <select name="employee_id">
+        <option value="">Todos</option>
+        <% employees.forEach(e => { %><option value="<%= e.id %>" <%= String(e.id)===String(employeeId)?'selected':'' %>><%= e.name %></option><% }) %>
+      </select>
+    </div>
+    <div style="display:flex;align-items:end"><button class="btn sec">Filtrar</button></div>
+  </form>
+  <a class="btn" href="/certificates/new">+ Novo atestado</a>
+</div>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Funcionário</th><th>Tipo</th><th>Período</th><th>Dias</th><th>CID</th><th>Médico</th><th>Arquivo</th><th></th></tr>
+  <% rows.forEach(c => { const kindLabel = (KINDS.find(k => k[0] === c.kind) || [c.kind, c.kind])[1]; %>
+  <tr>
+    <td><%= c.emp_name %> <span class="muted">· <%= c.registration %></span></td>
+    <td><span class="pill in"><%= kindLabel %></span></td>
+    <td class="mono"><%= c.start_date.split('-').reverse().join('/') %><% if (c.end_date !== c.start_date) { %> – <%= c.end_date.split('-').reverse().join('/') %><% } %></td>
+    <td><%= c.days %></td>
+    <td class="mono"><%= c.cid || '—' %></td>
+    <td class="muted"><%= c.doctor || '—' %><% if (c.crm) { %> <small>(<%= c.crm %>)</small><% } %></td>
+    <td><% if (c.file_path) { %><a target="_blank" href="<%= c.file_path %>">abrir</a><% } else { %>—<% } %></td>
+    <td class="right">
+      <a class="btn sm sec" href="/certificates/<%= c.id %>/edit">Editar</a>
+      <form method="post" action="/certificates/<%= c.id %>/delete" style="display:inline">
+        <button class="btn sm danger" onclick="return confirm('Excluir este atestado?')">Excluir</button>
+      </form>
+    </td>
+  </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Nenhum atestado no período.</td></tr><% } %>
+</table>
+</div>
+<%- include('../partials/footer') %>

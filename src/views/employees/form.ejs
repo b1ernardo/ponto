@@ -52,6 +52,12 @@
 
 <% if (emp) { %>
 <div class="card">
+  <h2 style="margin-top:0">Atestados</h2>
+  <a class="btn sec sm" href="/certificates?employee_id=<%= emp.id %>">Ver atestados</a>
+  <a class="btn sm" href="/certificates/new">+ Novo atestado</a>
+</div>
+
+<div class="card">
   <h2 style="margin-top:0">Excluir funcionário</h2>
   <p class="muted">Se o funcionário já tiver batidas registradas, ele é <b>inativado</b> (o histórico e o AFD são preservados). Sem batidas, é excluído definitivamente.</p>
   <form method="post" action="/employees/<%= emp.id %>/delete" style="display:inline">

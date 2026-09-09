@@ -30,6 +30,7 @@
     <div class="kpi"><b><%= report.totals.balanceHm %></b><span>Saldo (banco de horas)</span></div>
     <div class="kpi"><b><%= report.totals.overtimeHm %></b><span>Horas extras</span></div>
     <div class="kpi"><b><%= report.totals.absences %></b><span>Faltas</span></div>
+    <div class="kpi"><b><%= report.totals.justified %></b><span>Dias c/ atestado</span></div>
   </div>
 
   <div class="tabwrap"><table>
@@ -42,6 +43,7 @@
       <td><%= d.workedHm %></td>
       <td class="<%= d.balanceMin < 0 ? '' : '' %>"><%= d.balanceHm %></td>
       <td>
+        <% if (d.certificate) { %><span class="pill ok" title="<%= d.certificate.notes || '' %>">Atestado<%= d.certificate.cid ? ' ' + d.certificate.cid : '' %></span><% } %>
         <% if (d.isAbsence) { %><span class="pill off">Falta</span><% } %>
         <% if (d.inconsistent) { %><span class="pill warn">Ímpar</span><% } %>
         <% if (d.lateMin > 0) { %><span class="pill warn">Atraso <%= Math.round(d.lateMin) %>m</span><% } %>

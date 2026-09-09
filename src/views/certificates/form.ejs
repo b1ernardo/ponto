@@ -1,0 +1,52 @@
+<%- include('../partials/header', { title: cert ? 'Editar atestado' : 'Novo atestado' }) %>
+<h1><%= cert ? 'Editar atestado' : 'Novo atestado' %></h1>
+<% if (error) { %><div class="alert err"><%= error %></div><% } %>
+
+<form method="post" action="<%= cert ? '/certificates/' + cert.id : '/certificates' %>" enctype="multipart/form-data" class="card">
+  <div class="row">
+    <div>
+      <label>Funcionário *</label>
+      <select name="employee_id" required>
+        <option value="">— selecione —</option>
+        <% employees.forEach(e => { %>
+        <option value="<%= e.id %>" <%= cert && cert.employee_id === e.id ? 'selected' : '' %>><%= e.name %> · <%= e.registration %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div>
+      <label>Tipo</label>
+      <select name="kind">
+        <% KINDS.forEach(([k, label]) => { %>
+        <option value="<%= k %>" <%= (cert ? cert.kind : 'atestado') === k ? 'selected' : '' %>><%= label %></option>
+        <% }) %>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div><label>Início *</label><input type="date" name="start_date" required value="<%= cert ? cert.start_date : '' %>"></div>
+    <div><label>Fim</label><input type="date" name="end_date" value="<%= cert ? cert.end_date : '' %>"></div>
+  </div>
+  <p class="muted" style="margin:.2em 0 0">Deixe o Fim em branco para atestado de 1 dia.</p>
+
+  <div class="row">
+    <div><label>CID (opcional)</label><input name="cid" value="<%= cert ? cert.cid : '' %>" placeholder="Ex.: J06"></div>
+    <div><label>Médico</label><input name="doctor" value="<%= cert ? cert.doctor : '' %>"></div>
+    <div><label>CRM</label><input name="crm" value="<%= cert ? cert.crm : '' %>"></div>
+  </div>
+
+  <label>Observações</label>
+  <input name="notes" value="<%= cert ? cert.notes : '' %>">
+
+  <label>Arquivo (PDF ou foto, até 8 MB)</label>
+  <input type="file" name="file" accept="application/pdf,image/*">
+  <% if (cert && cert.file_path) { %>
+    <p class="muted">Arquivo atual: <a target="_blank" href="<%= cert.file_path %>">abrir</a> — envie outro para substituir.</p>
+  <% } %>
+
+  <div style="margin-top:18px;display:flex;gap:10px">
+    <button class="btn"><%= cert ? 'Salvar' : 'Registrar atestado' %></button>
+    <a class="btn sec" href="/certificates">Cancelar</a>
+  </div>
+</form>
+<%- include('../partials/footer') %>

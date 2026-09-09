@@ -11,7 +11,7 @@
 
 <div class="card tabwrap">
 <table>
-  <tr><th>Funcionário</th><th>Previsto</th><th>Trabalhado</th><th>Saldo</th><th>Atrasos</th><th>Extras</th><th>Faltas</th><th>Inconsist.</th></tr>
+  <tr><th>Funcionário</th><th>Previsto</th><th>Trabalhado</th><th>Saldo</th><th>Atrasos</th><th>Extras</th><th>Faltas</th><th>Atestados</th><th>Inconsist.</th></tr>
   <% rows.forEach(r => { %>
   <tr>
     <td><%= r.employee.name %> <span class="muted">· <%= r.employee.registration %></span></td>
@@ -21,10 +21,11 @@
     <td><%= r.totals.lateHm %></td>
     <td><%= r.totals.overtimeHm %></td>
     <td><%= r.totals.absences %></td>
+    <td><%= r.totals.justified %></td>
     <td><%= r.totals.inconsistencies %></td>
   </tr>
   <% }) %>
-  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Sem dados.</td></tr><% } %>
+  <% if (!rows.length) { %><tr><td colspan="9" class="muted">Sem dados.</td></tr><% } %>
 </table>
 </div>
 <%- include('../partials/footer') %>
