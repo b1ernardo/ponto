@@ -9,13 +9,61 @@ import { requireAuth } from '../middleware/auth.js';
 
 export const punchRouter = Router();
 
+// Direcao estimada (par/impar do dia) e cooldown anti-duplicidade de um funcionario.
+function punchContext(empId) {
+  const today = localNowIso().slice(0, 10);
+  const countToday = db.prepare(
+    `SELECT COUNT(*) c FROM punches WHERE employee_id = ? AND date(punched_at) = ?`,
+  ).get(empId, today).c;
+  const direction = countToday % 2 === 0 ? 'IN' : 'OUT';
+
+  const last = db.prepare(
+    `SELECT punched_at FROM punches WHERE employee_id = ? ORDER BY id DESC LIMIT 1`,
+  ).get(empId);
+  let cooldown = 0;
+  if (last) {
+    const diff = (Date.now() - new Date(last.punched_at).getTime()) / 1000;
+    if (diff < config.punchMinIntervalSeconds) cooldown = Math.ceil(config.punchMinIntervalSeconds - diff);
+  }
+  return { direction, cooldown };
+}
+
+const dirLabel = (d) => (d === 'IN' ? 'ENTRADA' : 'SAIDA');
+
+/**
+ * Identifica o rosto sem registrar nada. O kiosk usa isso para mostrar a
+ * janela de confirmacao antes de bater o ponto.
+ * Body: { descriptor:[128] }
+ */
+punchRouter.post('/api/identify', requireDevice, (req, res) => {
+  const { descriptor } = req.body;
+  if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+    return res.status(400).json({ error: 'rosto nao capturado' });
+  }
+  const match = identify(descriptor);
+  if (!match) {
+    return res.status(404).json({ error: 'rosto nao reconhecido', hint: 'aproxime-se e tente novamente' });
+  }
+  const emp = match.employee;
+  const { direction, cooldown } = punchContext(emp.id);
+  res.json({
+    employee: { id: emp.id, name: emp.name, registration: emp.registration, photo: emp.photo_path },
+    direction,
+    directionLabel: dirLabel(direction),
+    distance: Number(match.distance.toFixed(3)),
+    cooldown,
+  });
+});
+
 /**
  * API do kiosk (celular da empresa).
- * Body: { deviceToken, descriptor:[128], photo:dataUrl, latitude, longitude }
+ * Body: { deviceToken, descriptor:[128], photo:dataUrl, latitude, longitude, expectedEmployeeId? }
  * Sem sessao de admin - protegido pelo token do dispositivo.
  */
 punchRouter.post('/api/punch', requireDevice, (req, res) => {
-  const { descriptor, photo, latitude, longitude } = req.body;
+  const {
+    descriptor, photo, latitude, longitude, expectedEmployeeId,
+  } = req.body;
   if (!Array.isArray(descriptor) || descriptor.length !== 128) {
     return res.status(400).json({ error: 'rosto nao capturado' });
   }
@@ -26,27 +74,20 @@ punchRouter.post('/api/punch', requireDevice, (req, res) => {
   }
   const emp = match.employee;
 
-  // anti-duplicidade: bloqueia batidas muito proximas
-  const last = db.prepare(
-    `SELECT punched_at FROM punches WHERE employee_id = ? ORDER BY id DESC LIMIT 1`,
-  ).get(emp.id);
-  if (last) {
-    const diff = (Date.now() - new Date(last.punched_at).getTime()) / 1000;
-    if (diff < config.punchMinIntervalSeconds) {
-      return res.status(429).json({
-        error: 'batida ja registrada ha instantes',
-        employee: emp.name,
-        wait: Math.ceil(config.punchMinIntervalSeconds - diff),
-      });
-    }
+  // o rosto confirmado na tela precisa ser o mesmo agora
+  if (expectedEmployeeId && Number(expectedEmployeeId) !== emp.id) {
+    return res.status(409).json({ error: 'rosto mudou; confirme novamente', employee: emp.name });
   }
 
-  // par/impar do dia -> direcao estimada
-  const today = localNowIso().slice(0, 10);
-  const countToday = db.prepare(
-    `SELECT COUNT(*) c FROM punches WHERE employee_id = ? AND date(punched_at) = ?`,
-  ).get(emp.id, today).c;
-  const direction = countToday % 2 === 0 ? 'IN' : 'OUT';
+  // anti-duplicidade: bloqueia batidas muito proximas
+  const { direction, cooldown } = punchContext(emp.id);
+  if (cooldown > 0) {
+    return res.status(429).json({
+      error: 'batida ja registrada ha instantes',
+      employee: emp.name,
+      wait: cooldown,
+    });
+  }
 
   const nsr = nextNsr();
   const punchedAt = localNowIso();

@@ -89,3 +89,22 @@ input[type=checkbox]{width:auto}
 .kiosk .result-name{font-size:30px;font-weight:700}
 .kiosk .setup{background:#fff;color:var(--ink);max-width:400px;padding:26px;border-radius:14px}
 .kiosk-link{position:fixed;bottom:8px;right:12px;font-size:12px;color:rgba(255,255,255,.5)}
+
+/* ---- janela de confirmação do kiosk ---- */
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  background:rgba(2,6,23,.72);backdrop-filter:blur(3px);padding:20px}
+.modal-card{background:#fff;color:var(--ink);width:100%;max-width:400px;border-radius:18px;
+  padding:26px 24px 20px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.modal-photo{width:110px;height:110px;border-radius:50%;object-fit:cover;margin:0 auto 12px;
+  border:3px solid var(--line)}
+.modal-icon{width:76px;height:76px;border-radius:50%;margin:0 auto 12px;display:flex;
+  align-items:center;justify-content:center;font-size:44px;font-weight:700;color:#fff}
+.modal-icon.ok{background:var(--ok)}
+.modal-icon.err{background:var(--err)}
+.modal-name{font-size:24px;font-weight:700;line-height:1.2}
+.modal-name.ok{color:var(--ok)}
+.modal-name.err{color:var(--err)}
+.modal-sub{font-size:17px;color:var(--muted);margin-top:8px;min-height:24px}
+.modal-actions{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.modal-actions .btn{width:100%;padding:14px;font-size:18px;border-radius:12px}
+.modal-count{font-size:13px;color:var(--muted);margin-top:12px;min-height:18px}

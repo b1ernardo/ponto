@@ -38,6 +38,21 @@
 </div>
 <a href="/login" class="kiosk-link">painel</a>
 
+<!-- Janela de confirmação -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-card">
+    <img id="m-photo" class="modal-photo" alt="" hidden>
+    <div id="m-icon" class="modal-icon" hidden></div>
+    <div id="m-name" class="modal-name"></div>
+    <div id="m-sub" class="modal-sub"></div>
+    <div class="modal-actions">
+      <button id="m-ok" class="btn">Confirmar</button>
+      <button id="m-cancel" class="btn sec">Não sou eu</button>
+    </div>
+    <div id="m-count" class="modal-count"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
 <script src="/public/js/face-common.js"></script>
 <script>
@@ -48,10 +63,20 @@ const statusEl = document.getElementById('status');
 const setupEl = document.getElementById('setup');
 const mainEl = document.getElementById('main');
 
+const modal = document.getElementById('modal');
+const mPhoto = document.getElementById('m-photo');
+const mIcon = document.getElementById('m-icon');
+const mName = document.getElementById('m-name');
+const mSub = document.getElementById('m-sub');
+const mOk = document.getElementById('m-ok');
+const mCancel = document.getElementById('m-cancel');
+const mCount = document.getElementById('m-count');
+
 let token = localStorage.getItem(LS_KEY) || '';
-let busy = false;
-let lastResultUntil = 0;
 let coords = null;
+let state = 'idle';         // idle | scanning | confirming | submitting | result
+let pending = null;         // { employee, directionLabel } aguardando confirmação
+let countTimer = null;
 
 function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'status ' + (cls || ''); }
 
@@ -62,7 +87,6 @@ function tick() {
 }
 setInterval(tick, 1000); tick();
 
-// GPS opcional por batida
 if (navigator.geolocation) {
   navigator.geolocation.watchPosition(
     p => { coords = { latitude: p.coords.latitude, longitude: p.coords.longitude }; },
@@ -77,6 +101,67 @@ document.getElementById('tokenSave').addEventListener('click', () => {
   location.reload();
 });
 
+// ---------- modal ----------
+function clearCount() { if (countTimer) { clearInterval(countTimer); countTimer = null; } mCount.textContent = ''; }
+
+function closeModal() {
+  clearCount();
+  modal.hidden = true;
+  pending = null;
+  state = 'scanning';
+  setStatus('Aproxime o rosto para registrar o ponto');
+}
+
+function showConfirm(data) {
+  state = 'confirming';
+  pending = data;
+  mIcon.hidden = true;
+  if (data.employee.photo) { mPhoto.src = data.employee.photo; mPhoto.hidden = false; } else { mPhoto.hidden = true; }
+  mName.textContent = data.employee.name;
+  mName.className = 'modal-name';
+  mSub.innerHTML = 'Registrar <b>' + data.directionLabel + '</b>?';
+  mOk.textContent = 'Confirmar';
+  mOk.hidden = false;
+  mCancel.hidden = false;
+  modal.hidden = false;
+
+  let left = 20;
+  clearCount();
+  mCount.textContent = 'confirme em ' + left + 's';
+  countTimer = setInterval(() => {
+    left -= 1;
+    mCount.textContent = 'confirme em ' + left + 's';
+    if (left <= 0) closeModal();
+  }, 1000);
+}
+
+function showResult(ok, title, sub) {
+  state = 'result';
+  clearCount();
+  mPhoto.hidden = true;
+  mIcon.hidden = false;
+  mIcon.textContent = ok ? '✓' : '!';
+  mIcon.className = 'modal-icon ' + (ok ? 'ok' : 'err');
+  mName.textContent = title;
+  mName.className = 'modal-name ' + (ok ? 'ok' : 'err');
+  mSub.innerHTML = sub || '';
+  mOk.textContent = 'OK';
+  mOk.hidden = false;
+  mCancel.hidden = true;
+  modal.hidden = false;
+
+  let left = 8;
+  clearCount();
+  countTimer = setInterval(() => { left -= 1; if (left <= 0) closeModal(); }, 1000);
+}
+
+mCancel.addEventListener('click', closeModal);
+mOk.addEventListener('click', () => {
+  if (state === 'confirming') confirmPunch();
+  else closeModal();
+});
+
+// ---------- fluxo ----------
 async function boot() {
   if (!token) { setupEl.hidden = false; return; }
   mainEl.hidden = false;
@@ -84,6 +169,7 @@ async function boot() {
     setStatus('Carregando modelos…');
     await FaceKit.loadModels(MODEL_URL);
     await FaceKit.startCamera(video);
+    state = 'scanning';
     setStatus('Aproxime o rosto para registrar o ponto');
     loop();
   } catch (e) {
@@ -92,48 +178,95 @@ async function boot() {
 }
 
 async function loop() {
-  if (!busy && Date.now() > lastResultUntil) {
-    busy = true;
+  if (state === 'scanning') {
     try {
       const r = await FaceKit.detectOnce(video);
-      if (r) await tryPunch(r.descriptor);
+      if (r && state === 'scanning') await identify(r.descriptor);
     } catch (e) { /* ignora frame */ }
-    busy = false;
   }
   requestAnimationFrame(() => setTimeout(loop, 400));
 }
 
-async function tryPunch(descriptor) {
-  const photo = FaceKit.snapshot(video, 480);
-  const res = await fetch('/api/punch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-device-token': token },
-    body: JSON.stringify({ descriptor, photo, ...(coords || {}) }),
-  });
-  const data = await res.json();
+async function identify(descriptor) {
+  state = 'confirming'; // trava o loop enquanto consulta
+  setStatus('Identificando…');
+  let res, data;
+  try {
+    res = await fetch('/api/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-device-token': token },
+      body: JSON.stringify({ descriptor }),
+    });
+    data = await res.json();
+  } catch (e) {
+    state = 'scanning'; setStatus('Aproxime o rosto para registrar o ponto'); return;
+  }
 
   if (res.status === 403) {
     localStorage.removeItem(LS_KEY);
     setStatus('Dispositivo não autorizado. Recarregue para reconfigurar.', 'err');
-    lastResultUntil = Date.now() + 5000; return;
+    state = 'idle';
+    return;
   }
-  if (data.ok) {
-    setStatus(
-      '<div class="result-name">' + data.employee.name + '</div>' +
-      '<div style="font-size:24px;margin-top:6px">' + data.directionLabel + ' · ' + data.punchedAt.slice(11,16) + '</div>' +
-      '<small>NSR ' + data.nsr + '</small>', 'ok');
-    lastResultUntil = Date.now() + 4000;
-  } else if (res.status === 429) {
-    setStatus((data.employee || '') + ' — batida recente. Aguarde ' + (data.wait||'') + 's', 'err');
-    lastResultUntil = Date.now() + 2500;
-  } else if (res.status === 404) {
+  if (res.status === 404) {
+    state = 'scanning';
     setStatus('Rosto não reconhecido. Tente novamente.', 'err');
-    lastResultUntil = Date.now() + 1500;
-  } else {
-    setStatus(data.error || 'Falha ao registrar', 'err');
-    lastResultUntil = Date.now() + 2000;
+    setTimeout(() => { if (state === 'scanning') setStatus('Aproxime o rosto para registrar o ponto'); }, 1500);
+    return;
   }
-  setTimeout(() => setStatus('Aproxime o rosto para registrar o ponto'), (lastResultUntil - Date.now()));
+  if (!res.ok) { state = 'scanning'; setStatus('Aproxime o rosto para registrar o ponto'); return; }
+
+  if (data.cooldown > 0) {
+    showResult(false, data.employee.name, 'Batida registrada há pouco. Aguarde ' + data.cooldown + 's.');
+    return;
+  }
+  showConfirm(data);
+}
+
+async function confirmPunch() {
+  if (!pending) return;
+  const emp = pending.employee;
+  state = 'submitting';
+  clearCount();
+  mOk.hidden = true; mCancel.hidden = true;
+  mSub.textContent = 'Registrando…';
+
+  let res, data;
+  try {
+    let shot = await FaceKit.detectOnce(video);            // valida que ainda há um rosto
+    if (!shot) { await new Promise(r => setTimeout(r, 250)); shot = await FaceKit.detectOnce(video); }
+    if (!shot) {
+      showResult(false, 'Rosto não detectado', 'Olhe para a câmera e tente de novo.');
+      return;
+    }
+    const photo = FaceKit.snapshot(video, 480);
+    res = await fetch('/api/punch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-device-token': token },
+      body: JSON.stringify({
+        descriptor: shot.descriptor,
+        photo,
+        expectedEmployeeId: emp.id,
+        ...(coords || {}),
+      }),
+    });
+    data = await res.json();
+  } catch (e) {
+    showResult(false, 'Falha de conexão', 'Tente novamente.');
+    return;
+  }
+
+  if (data && data.ok) {
+    showResult(true, data.employee.name, data.directionLabel + ' registrada às ' + data.punchedAt.slice(11,16) + ' · NSR ' + data.nsr);
+  } else if (res.status === 429) {
+    showResult(false, (data.employee || emp.name), 'Batida registrada há pouco. Aguarde ' + (data.wait || '') + 's.');
+  } else if (res.status === 409) {
+    showResult(false, 'Rosto mudou', 'Posicione-se de novo e confirme.');
+  } else if (res.status === 404) {
+    showResult(false, 'Rosto não reconhecido', 'Tente novamente.');
+  } else {
+    showResult(false, 'Não registrado', (data && data.error) || 'Tente novamente.');
+  }
 }
 
 boot();

@@ -1,5 +1,5 @@
 /* Service worker do Relógio de Ponto (PWA) */
-const CACHE = 'ponto-v1';
+const CACHE = 'ponto-v2';
 const PRECACHE = [
   '/public/css/app.css',
   '/public/js/face-common.js',
