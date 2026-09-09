@@ -74,9 +74,11 @@ const mCount = document.getElementById('m-count');
 
 let token = localStorage.getItem(LS_KEY) || '';
 let coords = null;
-let state = 'idle';         // idle | scanning | confirming | submitting | result
+let state = 'idle';         // idle | scanning | identifying | confirming | submitting | result
 let pending = null;         // { employee, directionLabel } aguardando confirmação
 let countTimer = null;
+let pauseUntil = 0;         // pausa o scanner (deixa a pessoa sair de frente da câmera)
+let stableHits = 0;         // frames consecutivos com rosto nítido
 
 function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'status ' + (cls || ''); }
 
@@ -104,10 +106,13 @@ document.getElementById('tokenSave').addEventListener('click', () => {
 // ---------- modal ----------
 function clearCount() { if (countTimer) { clearInterval(countTimer); countTimer = null; } mCount.textContent = ''; }
 
+// Fecha a janela e volta para a câmera (com uma pausa curta p/ a pessoa sair de frente)
 function closeModal() {
   clearCount();
   modal.hidden = true;
   pending = null;
+  stableHits = 0;
+  pauseUntil = Date.now() + 3500;
   state = 'scanning';
   setStatus('Aproxime o rosto para registrar o ponto');
 }
@@ -178,18 +183,28 @@ async function boot() {
 }
 
 async function loop() {
-  if (state === 'scanning') {
+  if (state === 'scanning' && Date.now() > pauseUntil) {
     try {
       const r = await FaceKit.detectOnce(video);
-      if (r && state === 'scanning') await identify(r.descriptor);
-    } catch (e) { /* ignora frame */ }
+      const score = r && r.detection ? (r.detection.score || r.detection._score || 0) : 0;
+      if (r && score >= 0.6) {
+        stableHits++;
+        // só consulta o servidor depois de 2 frames seguidos com rosto nítido
+        if (stableHits >= 2 && state === 'scanning') {
+          stableHits = 0;
+          await identify(r.descriptor);
+        }
+      } else {
+        stableHits = 0;
+      }
+    } catch (e) { stableHits = 0; }
   }
-  requestAnimationFrame(() => setTimeout(loop, 400));
+  requestAnimationFrame(() => setTimeout(loop, 350));
 }
 
 async function identify(descriptor) {
-  state = 'confirming'; // trava o loop enquanto consulta
-  setStatus('Identificando…');
+  state = 'identifying'; // trava o loop enquanto consulta
+  setStatus('Reconhecendo…');
   let res, data;
   try {
     res = await fetch('/api/identify', {
@@ -208,10 +223,12 @@ async function identify(descriptor) {
     state = 'idle';
     return;
   }
+  // rosto não reconhecido: NÃO abre janela, só segue escaneando
   if (res.status === 404) {
     state = 'scanning';
-    setStatus('Rosto não reconhecido. Tente novamente.', 'err');
-    setTimeout(() => { if (state === 'scanning') setStatus('Aproxime o rosto para registrar o ponto'); }, 1500);
+    pauseUntil = Date.now() + 800;
+    setStatus('Rosto não reconhecido. Aproxime-se e tente de novo.', 'err');
+    setTimeout(() => { if (state === 'scanning') setStatus('Aproxime o rosto para registrar o ponto'); }, 1600);
     return;
   }
   if (!res.ok) { state = 'scanning'; setStatus('Aproxime o rosto para registrar o ponto'); return; }
