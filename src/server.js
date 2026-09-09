@@ -51,6 +51,18 @@ app.use((req, res, next) => {
 
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+// ---- PWA (service worker + manifests servidos a partir da raiz p/ escopo '/') ----
+app.get('/sw.js', (req, res) => {
+  res.set('Service-Worker-Allowed', '/');
+  res.set('Cache-Control', 'no-cache');
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, '..', 'public', 'sw.js'));
+});
+app.get(['/manifest-kiosk.webmanifest', '/manifest-admin.webmanifest'], (req, res) => {
+  res.type('application/manifest+json');
+  res.sendFile(path.join(__dirname, '..', 'public', path.basename(req.path)));
+});
+
 // ---- Kiosk (celular da empresa) - protegido por token de dispositivo ----
 app.get('/kiosk', (req, res) => {
   res.render('kiosk');

@@ -2,9 +2,18 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Bater Ponto</title>
 <link rel="stylesheet" href="/public/css/app.css">
+<link rel="manifest" href="/manifest-kiosk.webmanifest">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bater Ponto">
+<link rel="apple-touch-icon" href="/public/icons/apple-touch-icon.png">
+<link rel="icon" href="/public/icons/icon-192.png">
+<script src="/public/js/pwa.js" defer></script>
 </head>
 <body>
 <div class="kiosk">
@@ -25,6 +34,7 @@
     </div>
     <div id="status" class="status">Carregando…</div>
   </div>
+  <button id="pwa-install" class="btn sec" style="margin-top:18px" hidden>📲 Instalar app</button>
 </div>
 <a href="/login" class="kiosk-link">painel</a>
 
