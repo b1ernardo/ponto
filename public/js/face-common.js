@@ -42,7 +42,7 @@ window.FaceKit = (function () {
     return { descriptor: Array.from(res.descriptor), detection: res.detection };
   }
 
-  /** Captura JPEG do frame atual como dataURL. */
+  /** Captura JPEG do frame atual como dataURL (orientação real, sem espelho). */
   function snapshot(videoEl, maxW = 480) {
     const scale = Math.min(1, maxW / videoEl.videoWidth);
     const c = document.createElement('canvas');
