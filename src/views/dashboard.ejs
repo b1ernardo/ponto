@@ -1,0 +1,38 @@
+<%- include('partials/header', { title: 'Painel' }) %>
+<h1>Painel</h1>
+<p class="sub">Resumo de hoje — <%= today.split('-').reverse().join('/') %></p>
+
+<div class="grid c4">
+  <div class="kpi"><b><%= stats.employees %></b><span>Funcionários ativos</span></div>
+  <div class="kpi"><b><%= stats.withFace %></b><span>Com rosto cadastrado</span></div>
+  <div class="kpi"><b><%= stats.punchesToday %></b><span>Batidas hoje</span></div>
+  <div class="kpi"><b><%= stats.devices %></b><span>Dispositivos ativos</span></div>
+</div>
+
+<div class="grid c2" style="margin-top:18px">
+  <div class="card">
+    <h2 style="margin-top:0">Presentes agora (<%= present.length %>)</h2>
+    <% if (!present.length) { %><p class="muted">Ninguém com entrada em aberto.</p><% } %>
+    <table>
+      <% present.forEach(p => { %>
+      <tr><td><%= p.name %></td><td class="right muted"><%= p.last.slice(11,16) %></td></tr>
+      <% }) %>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Últimas batidas</h2>
+    <div class="tabwrap"><table>
+      <tr><th>Hora</th><th>Funcionário</th><th>Tipo</th><th>Disp.</th></tr>
+      <% recent.forEach(r => { %>
+      <tr>
+        <td class="mono"><%= r.punched_at.slice(11,16) %></td>
+        <td><%= r.emp_name %></td>
+        <td><span class="pill <%= r.direction === 'IN' ? 'in' : r.direction === 'OUT' ? 'out' : '' %>"><%= r.direction === 'IN' ? 'Entrada' : r.direction === 'OUT' ? 'Saída' : '—' %></span></td>
+        <td class="muted"><%= r.dev_name || r.source %></td>
+      </tr>
+      <% }) %>
+    </table></div>
+  </div>
+</div>
+<%- include('partials/footer') %>

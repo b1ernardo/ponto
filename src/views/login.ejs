@@ -1,0 +1,14 @@
+<%- include('partials/header', { title: 'Entrar' }) %>
+<div class="login-box">
+  <h1>⏱ Relógio de Ponto</h1>
+  <p class="sub" style="text-align:center">Acesso administrativo</p>
+  <% if (error) { %><div class="alert err"><%= error %></div><% } %>
+  <form method="post" action="/login">
+    <label>E-mail</label>
+    <input type="email" name="email" required autofocus>
+    <label>Senha</label>
+    <input type="password" name="password" required>
+    <button class="btn" style="width:100%;margin-top:16px">Entrar</button>
+  </form>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,51 @@
+<%- include('partials/header', { title: 'Batidas' }) %>
+<h1>Batidas de ponto</h1>
+<p class="sub">Consulta e correção manual de marcações.</p>
+
+<form method="get" class="toolbar">
+  <div><label>Data</label><input type="date" name="date" value="<%= date %>"></div>
+  <div><label>Funcionário</label>
+    <select name="employee_id">
+      <option value="">Todos</option>
+      <% employees.forEach(e => { %><option value="<%= e.id %>" <%= String(e.id)===String(employeeId)?'selected':'' %>><%= e.name %></option><% }) %>
+    </select>
+  </div>
+  <div style="display:flex;align-items:end"><button class="btn sec">Filtrar</button></div>
+</form>
+
+<div class="card">
+  <h2 style="margin-top:0">Lançar batida manual</h2>
+  <form method="post" action="/punches" class="row">
+    <div><label>Funcionário</label><select name="employee_id" required>
+      <% employees.forEach(e => { %><option value="<%= e.id %>"><%= e.name %></option><% }) %>
+    </select></div>
+    <div><label>Data</label><input type="date" name="date" value="<%= date %>" required></div>
+    <div><label>Hora</label><input type="time" name="time" required></div>
+    <div><label>Tipo</label><select name="direction">
+      <option value="auto">Automático (par/ímpar)</option>
+      <option value="IN">Entrada</option>
+      <option value="OUT">Saída</option>
+    </select></div>
+    <div style="display:flex;align-items:end"><button class="btn">Registrar</button></div>
+  </form>
+</div>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>NSR</th><th>Hora</th><th>Funcionário</th><th>Tipo</th><th>Origem</th><th>GPS</th><th>Foto</th><th></th></tr>
+  <% rows.forEach(r => { %>
+  <tr>
+    <td class="mono"><%= r.nsr %></td>
+    <td class="mono"><%= r.punched_at.slice(11,16) %></td>
+    <td><%= r.emp_name %></td>
+    <td><span class="pill <%= r.direction==='IN'?'in':r.direction==='OUT'?'out':'' %>"><%= r.direction==='IN'?'Entrada':r.direction==='OUT'?'Saída':'—' %></span></td>
+    <td class="muted"><%= r.source %></td>
+    <td class="muted"><% if (r.latitude) { %><a target="_blank" href="https://maps.google.com/?q=<%= r.latitude %>,<%= r.longitude %>">ver</a><% } else { %>—<% } %></td>
+    <td><% if (r.photo_path) { %><a target="_blank" href="<%= r.photo_path %>">📷</a><% } else { %>—<% } %></td>
+    <td class="right"><form method="post" action="/punches/<%= r.id %>/delete" style="display:inline"><button class="btn sm danger" onclick="return confirm('Excluir batida NSR <%= r.nsr %>?')">Excluir</button></form></td>
+  </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Nenhuma batida.</td></tr><% } %>
+</table>
+</div>
+<%- include('partials/footer') %>

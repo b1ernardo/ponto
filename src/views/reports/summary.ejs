@@ -1,0 +1,30 @@
+<%- include('../partials/header', { title: 'Resumo de horas' }) %>
+<h1>Resumo de horas</h1>
+<form method="get" class="toolbar">
+  <div><label>Início</label><input type="date" name="start" value="<%= start %>"></div>
+  <div><label>Fim</label><input type="date" name="end" value="<%= end %>"></div>
+  <div style="display:flex;align-items:end;gap:8px">
+    <button class="btn sec">Ver</button>
+    <a class="btn sm sec" href="?start=<%= start %>&end=<%= end %>&format=csv">CSV</a>
+  </div>
+</form>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Funcionário</th><th>Previsto</th><th>Trabalhado</th><th>Saldo</th><th>Atrasos</th><th>Extras</th><th>Faltas</th><th>Inconsist.</th></tr>
+  <% rows.forEach(r => { %>
+  <tr>
+    <td><%= r.employee.name %> <span class="muted">· <%= r.employee.registration %></span></td>
+    <td><%= r.totals.expectedHm %></td>
+    <td><%= r.totals.workedHm %></td>
+    <td><%= r.totals.balanceHm %></td>
+    <td><%= r.totals.lateHm %></td>
+    <td><%= r.totals.overtimeHm %></td>
+    <td><%= r.totals.absences %></td>
+    <td><%= r.totals.inconsistencies %></td>
+  </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="8" class="muted">Sem dados.</td></tr><% } %>
+</table>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,37 @@
+<%- include('partials/header', { title: 'Dispositivos' }) %>
+<h1>Dispositivos autorizados</h1>
+<p class="sub">Somente celulares/tablets com um token válido podem abrir a tela de bater ponto.</p>
+
+<% if (justCreated) { const d = rows.find(r => r.id == justCreated); if (d) { %>
+<div class="alert ok">
+  <b>Dispositivo criado.</b> No celular da empresa, abra <span class="mono"><%= baseUrl %>/kiosk</span> e cole este token:
+  <div class="mono" style="margin-top:8px;word-break:break-all;background:#fff;padding:8px;border-radius:6px"><%= d.token %></div>
+</div>
+<% } } %>
+
+<div class="card">
+  <form method="post" action="/devices" class="row">
+    <div style="flex:2"><label>Nome do dispositivo</label><input name="name" placeholder="Ex.: Celular Portaria" required></div>
+    <div style="display:flex;align-items:end"><button class="btn">Gerar token</button></div>
+  </form>
+</div>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Nome</th><th>Token</th><th>Último acesso</th><th>Status</th><th></th></tr>
+  <% rows.forEach(d => { %>
+  <tr>
+    <td><%= d.name %></td>
+    <td class="mono" style="max-width:260px;overflow:hidden;text-overflow:ellipsis"><%= d.token %></td>
+    <td class="muted"><%= d.last_seen ? d.last_seen.replace('T',' ') : '—' %><br><small><%= d.last_ip || '' %></small></td>
+    <td><span class="pill <%= d.active ? 'ok' : 'off' %>"><%= d.active ? 'Ativo' : 'Bloqueado' %></span></td>
+    <td class="right">
+      <form method="post" action="/devices/<%= d.id %>/toggle" style="display:inline"><button class="btn sm sec"><%= d.active ? 'Bloquear' : 'Ativar' %></button></form>
+      <form method="post" action="/devices/<%= d.id %>/delete" style="display:inline"><button class="btn sm danger" onclick="return confirm('Excluir dispositivo?')">Excluir</button></form>
+    </td>
+  </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="5" class="muted">Nenhum dispositivo.</td></tr><% } %>
+</table>
+</div>
+<%- include('partials/footer') %>

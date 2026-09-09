@@ -1,0 +1,53 @@
+<%- include('partials/header', { title: 'Escalas' }) %>
+<h1>Escalas de trabalho</h1>
+<p class="sub">Define a jornada prevista por dia da semana e a tolerância para atraso/hora extra.</p>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Nome</th><th>Dias</th><th>Tolerância</th><th></th></tr>
+  <% rows.forEach(s => { %>
+  <tr>
+    <td><%= s.name %></td>
+    <td class="muted">
+      <% DAYS.forEach(([k,label]) => { if (s.days[k]) { %>
+        <%= label.slice(0,3) %> <%= s.days[k].start %>–<%= s.days[k].end %><% if (s.days[k].break) { %> (<%= s.days[k].break %>m int.)<% } %>&nbsp;&nbsp;
+      <% } }) %>
+    </td>
+    <td><%= s.tolerance_min %> min</td>
+    <td class="right">
+      <a class="btn sm sec" href="/schedules/<%= s.id %>/edit">Editar</a>
+      <form method="post" action="/schedules/<%= s.id %>/delete" style="display:inline">
+        <button class="btn sm danger" onclick="return confirm('Excluir escala?')">Excluir</button>
+      </form>
+    </td>
+  </tr>
+  <% }) %>
+</table>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0"><%= editing ? 'Editar escala' : 'Nova escala' %></h2>
+  <form method="post" action="/schedules">
+    <% if (editing) { %><input type="hidden" name="id" value="<%= editing.id %>"><% } %>
+    <div class="row">
+      <div><label>Nome</label><input name="name" value="<%= editing ? editing.name : '' %>" required></div>
+      <div><label>Tolerância (min)</label><input type="number" name="tolerance_min" value="<%= editing ? editing.tolerance_min : 10 %>"></div>
+    </div>
+    <table style="margin-top:12px">
+      <tr><th>Dia</th><th>Trabalha</th><th>Início</th><th>Fim</th><th>Intervalo (min)</th></tr>
+      <% DAYS.forEach(([k,label]) => { const d = editing && editing.days[k]; %>
+      <tr>
+        <td><%= label %></td>
+        <td><input type="checkbox" name="enabled_<%= k %>" value="1" <%= d ? 'checked' : '' %>></td>
+        <td><input type="time" name="start_<%= k %>" value="<%= d ? d.start : '08:00' %>"></td>
+        <td><input type="time" name="end_<%= k %>" value="<%= d ? d.end : '17:00' %>"></td>
+        <td><input type="number" name="break_<%= k %>" value="<%= d ? d.break : 60 %>"></td>
+      </tr>
+      <% }) %>
+    </table>
+    <div style="margin-top:14px"><button class="btn">Salvar</button>
+      <% if (editing) { %><a class="btn sec" href="/schedules">Cancelar</a><% } %>
+    </div>
+  </form>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,27 @@
+<%- include('../partials/header', { title: 'Atrasos e faltas' }) %>
+<h1>Atrasos, faltas e inconsistências</h1>
+<form method="get" class="toolbar">
+  <div><label>Início</label><input type="date" name="start" value="<%= start %>"></div>
+  <div><label>Fim</label><input type="date" name="end" value="<%= end %>"></div>
+  <div style="display:flex;align-items:end;gap:8px">
+    <button class="btn sec">Ver</button>
+    <a class="btn sm sec" href="?start=<%= start %>&end=<%= end %>&format=csv">CSV</a>
+  </div>
+</form>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Data</th><th>Funcionário</th><th>Ocorrência</th><th>Atraso</th><th>Trabalhado</th></tr>
+  <% items.forEach(i => { %>
+  <tr>
+    <td class="mono"><%= i.date.split('-').reverse().join('/') %></td>
+    <td><%= i.name %> <span class="muted">· <%= i.registration %></span></td>
+    <td><span class="pill <%= i.type==='Falta'?'off':'warn' %>"><%= i.type %></span></td>
+    <td><%= i.lateHm %></td>
+    <td><%= i.workedHm %></td>
+  </tr>
+  <% }) %>
+  <% if (!items.length) { %><tr><td colspan="5" class="muted">Nenhuma ocorrência no período. 🎉</td></tr><% } %>
+</table>
+</div>
+<%- include('../partials/footer') %>

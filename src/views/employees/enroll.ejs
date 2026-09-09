@@ -1,0 +1,70 @@
+<%- include('../partials/header', { title: 'Cadastrar rosto' }) %>
+<h1>Cadastrar rosto — <%= emp.name %></h1>
+<p class="sub">Matrícula <%= emp.registration %>. Capture de 3 a 5 amostras com boa iluminação, olhando para a câmera.</p>
+
+<div class="card">
+  <div class="videobox">
+    <video id="video" playsinline muted></video>
+    <canvas id="overlay" class="overlay"></canvas>
+  </div>
+
+  <div id="msg" class="alert info" style="margin-top:14px">Carregando modelos…</div>
+
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <button id="capture" class="btn" disabled>Capturar amostra</button>
+    <button id="save" class="btn" disabled>Salvar (<span id="count">0</span>)</button>
+    <a class="btn sec" href="/employees">Voltar</a>
+  </div>
+  <div id="thumbs" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<script src="/public/js/face-common.js"></script>
+<script>
+const MODEL_URL = <%- JSON.stringify(faceModelUrl) %>;
+const EMP_ID = <%= emp.id %>;
+const video = document.getElementById('video');
+const msg = document.getElementById('msg');
+const samples = [];
+
+function setMsg(t, cls) { msg.textContent = t; msg.className = 'alert ' + (cls || 'info'); }
+
+(async () => {
+  try {
+    await FaceKit.loadModels(MODEL_URL);
+    await FaceKit.startCamera(video);
+    setMsg('Pronto. Posicione o rosto e clique em "Capturar amostra".', 'ok');
+    document.getElementById('capture').disabled = false;
+  } catch (e) {
+    setMsg('Erro: ' + e.message + '. Verifique a permissão da câmera (exige HTTPS).', 'err');
+  }
+})();
+
+document.getElementById('capture').addEventListener('click', async () => {
+  setMsg('Detectando…');
+  const r = await FaceKit.detectOnce(video);
+  if (!r) { setMsg('Nenhum rosto detectado. Tente novamente.', 'err'); return; }
+  samples.push(r.descriptor);
+  const img = document.createElement('img');
+  img.src = FaceKit.snapshot(video, 120);
+  img.width = 90; img.style.borderRadius = '8px';
+  document.getElementById('thumbs').appendChild(img);
+  document.getElementById('count').textContent = samples.length;
+  document.getElementById('save').disabled = samples.length < 1;
+  setMsg(samples.length + ' amostra(s) capturada(s).', 'ok');
+});
+
+document.getElementById('save').addEventListener('click', async () => {
+  setMsg('Salvando…');
+  const photo = FaceKit.snapshot(video, 320);
+  const res = await fetch('/employees/' + EMP_ID + '/face', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ descriptors: samples, photo }),
+  });
+  const data = await res.json();
+  if (data.ok) { setMsg('Rosto salvo com ' + data.samples + ' amostras. Redirecionando…', 'ok');
+    setTimeout(() => location.href = '/employees', 900);
+  } else { setMsg('Erro: ' + (data.error || 'falha ao salvar'), 'err'); }
+});
+</script>
+<%- include('../partials/footer') %>

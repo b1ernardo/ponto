@@ -1,0 +1,31 @@
+services:
+  app:
+    image: ghcr.io/b1ernardo/relogio-ponto:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.relogioponto.rule=Host(`ponto.gestaosystem.tech`)
+      - traefik.http.routers.relogioponto.entrypoints=websecure
+      - traefik.http.routers.relogioponto.tls.certresolver=letsencrypt
+      - traefik.http.services.relogioponto.loadbalancer.server.port=3000
+    ports:
+      - "3025:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      TRUST_PROXY: "true"
+      SECURE_COOKIES: "true"
+      DATA_DIR: /data
+      UPLOAD_DIR: /data/uploads
+      SESSION_SECRET: ${SESSION_SECRET}
+      FACE_MATCH_THRESHOLD: "0.52"
+      PUNCH_MIN_INTERVAL_SECONDS: "60"
+      SEED_ADMIN_NAME: Administrador
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+    volumes:
+      - relogioponto_data:/data
+    restart: unless-stopped
+
+volumes:
+  relogioponto_data:

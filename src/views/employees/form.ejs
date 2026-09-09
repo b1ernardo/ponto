@@ -1,0 +1,52 @@
+<%- include('../partials/header', { title: emp ? 'Editar funcionário' : 'Novo funcionário' }) %>
+<h1><%= emp ? 'Editar funcionário' : 'Novo funcionário' %></h1>
+<% if (error) { %><div class="alert err"><%= error %></div><% } %>
+
+<form method="post" action="<%= emp ? '/employees/' + emp.id : '/employees' %>" class="card">
+  <div class="row">
+    <div><label>Nome completo *</label><input name="name" required value="<%= emp ? emp.name : '' %>"></div>
+    <div><label>Matrícula *</label><input name="registration" required value="<%= emp ? emp.registration : '' %>"></div>
+  </div>
+  <div class="row">
+    <div><label>CPF</label><input name="cpf" value="<%= emp ? emp.cpf : '' %>"></div>
+    <div><label>PIS/PASEP (usado no AFD)</label><input name="pis" value="<%= emp ? emp.pis : '' %>"></div>
+  </div>
+  <div class="row">
+    <div><label>Setor</label><input name="department" value="<%= emp ? emp.department : '' %>"></div>
+    <div><label>Cargo</label><input name="position" value="<%= emp ? emp.position : '' %>"></div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Escala</label>
+      <select name="schedule_id">
+        <option value="">— sem escala —</option>
+        <% schedules.forEach(s => { %>
+        <option value="<%= s.id %>" <%= emp && emp.schedule_id === s.id ? 'selected' : '' %>><%= s.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div>
+      <label>Situação</label>
+      <label style="display:flex;gap:8px;align-items:center;color:var(--ink)">
+        <input type="checkbox" name="active" value="1" <%= !emp || emp.active ? 'checked' : '' %>> Ativo
+      </label>
+    </div>
+  </div>
+
+  <div style="margin-top:18px;display:flex;gap:10px">
+    <button class="btn"><%= emp ? 'Salvar' : 'Salvar e cadastrar rosto' %></button>
+    <a class="btn sec" href="/employees">Cancelar</a>
+  </div>
+</form>
+
+<% if (emp && emp.face_descriptor) { %>
+<div class="card">
+  <h2 style="margin-top:0">Reconhecimento facial</h2>
+  <p class="muted"><%= emp.face_samples %> amostra(s) cadastrada(s).</p>
+  <a class="btn sec sm" href="/employees/<%= emp.id %>/enroll">Recapturar rosto</a>
+  <form method="post" action="/employees/<%= emp.id %>/face/delete" style="display:inline">
+    <button class="btn danger sm" onclick="return confirm('Remover o rosto cadastrado?')">Remover rosto</button>
+  </form>
+</div>
+<% } %>
+<%- include('../partials/footer') %>

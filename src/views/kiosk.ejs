@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Bater Ponto</title>
+<link rel="stylesheet" href="/public/css/app.css">
+</head>
+<body>
+<div class="kiosk">
+  <div id="setup" class="setup" hidden>
+    <h2 style="margin-top:0">Autorizar dispositivo</h2>
+    <p class="muted">Cole o token gerado em <b>Dispositivos</b> no painel administrativo.</p>
+    <input id="tokenInput" placeholder="token do dispositivo">
+    <button id="tokenSave" class="btn" style="width:100%;margin-top:12px">Salvar</button>
+    <p id="setupMsg" class="muted"></p>
+  </div>
+
+  <div id="main" hidden>
+    <div class="clock" id="clock">--:--</div>
+    <h1 style="margin:.2em 0">Bater ponto</h1>
+    <div class="videobox">
+      <video id="video" playsinline muted></video>
+      <canvas id="overlay" class="overlay"></canvas>
+    </div>
+    <div id="status" class="status">Carregando…</div>
+  </div>
+</div>
+<a href="/login" class="kiosk-link">painel</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<script src="/public/js/face-common.js"></script>
+<script>
+const MODEL_URL = <%- JSON.stringify(faceModelUrl) %>;
+const LS_KEY = 'ponto_device_token';
+const video = document.getElementById('video');
+const statusEl = document.getElementById('status');
+const setupEl = document.getElementById('setup');
+const mainEl = document.getElementById('main');
+
+let token = localStorage.getItem(LS_KEY) || '';
+let busy = false;
+let lastResultUntil = 0;
+let coords = null;
+
+function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'status ' + (cls || ''); }
+
+function tick() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+setInterval(tick, 1000); tick();
+
+// GPS opcional por batida
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(
+    p => { coords = { latitude: p.coords.latitude, longitude: p.coords.longitude }; },
+    () => {}, { enableHighAccuracy: true, maximumAge: 30000 },
+  );
+}
+
+document.getElementById('tokenSave').addEventListener('click', () => {
+  const v = document.getElementById('tokenInput').value.trim();
+  if (!v) return;
+  localStorage.setItem(LS_KEY, v); token = v;
+  location.reload();
+});
+
+async function boot() {
+  if (!token) { setupEl.hidden = false; return; }
+  mainEl.hidden = false;
+  try {
+    setStatus('Carregando modelos…');
+    await FaceKit.loadModels(MODEL_URL);
+    await FaceKit.startCamera(video);
+    setStatus('Aproxime o rosto para registrar o ponto');
+    loop();
+  } catch (e) {
+    setStatus('Erro de câmera/modelo: ' + e.message + '<br><small>É necessário HTTPS e permitir a câmera.</small>', 'err');
+  }
+}
+
+async function loop() {
+  if (!busy && Date.now() > lastResultUntil) {
+    busy = true;
+    try {
+      const r = await FaceKit.detectOnce(video);
+      if (r) await tryPunch(r.descriptor);
+    } catch (e) { /* ignora frame */ }
+    busy = false;
+  }
+  requestAnimationFrame(() => setTimeout(loop, 400));
+}
+
+async function tryPunch(descriptor) {
+  const photo = FaceKit.snapshot(video, 480);
+  const res = await fetch('/api/punch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-device-token': token },
+    body: JSON.stringify({ descriptor, photo, ...(coords || {}) }),
+  });
+  const data = await res.json();
+
+  if (res.status === 403) {
+    localStorage.removeItem(LS_KEY);
+    setStatus('Dispositivo não autorizado. Recarregue para reconfigurar.', 'err');
+    lastResultUntil = Date.now() + 5000; return;
+  }
+  if (data.ok) {
+    setStatus(
+      '<div class="result-name">' + data.employee.name + '</div>' +
+      '<div style="font-size:24px;margin-top:6px">' + data.directionLabel + ' · ' + data.punchedAt.slice(11,16) + '</div>' +
+      '<small>NSR ' + data.nsr + '</small>', 'ok');
+    lastResultUntil = Date.now() + 4000;
+  } else if (res.status === 429) {
+    setStatus((data.employee || '') + ' — batida recente. Aguarde ' + (data.wait||'') + 's', 'err');
+    lastResultUntil = Date.now() + 2500;
+  } else if (res.status === 404) {
+    setStatus('Rosto não reconhecido. Tente novamente.', 'err');
+    lastResultUntil = Date.now() + 1500;
+  } else {
+    setStatus(data.error || 'Falha ao registrar', 'err');
+    lastResultUntil = Date.now() + 2000;
+  }
+  setTimeout(() => setStatus('Aproxime o rosto para registrar o ponto'), (lastResultUntil - Date.now()));
+}
+
+boot();
+</script>
+</body>
+</html>

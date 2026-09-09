@@ -1,0 +1,8 @@
+node_modules
+data
+.env
+.git
+*.log
+scratch_*
+public/models
+npm-debug.log*

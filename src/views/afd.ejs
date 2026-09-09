@@ -1,0 +1,23 @@
+<%- include('partials/header', { title: 'AFD' }) %>
+<h1>Exportação AFD</h1>
+<p class="sub">Arquivo Fonte de Dados no layout da Portaria 1510 (aceito pelos softwares de tratamento de ponto e pela Portaria 671/2021 para REP alternativo).</p>
+
+<div class="card">
+  <form method="get" class="toolbar">
+    <div><label>Mês de referência</label><input type="month" name="month" value="<%= month %>"></div>
+    <div style="display:flex;align-items:end"><button class="btn sec">Recalcular</button></div>
+  </form>
+  <p>Período: <b><%= start.split('-').reverse().join('/') %></b> a <b><%= end.split('-').reverse().join('/') %></b></p>
+  <p><%= preview.total || 0 %> marcações no período — <%= preview.comPis || 0 %> com PIS (entram no AFD).</p>
+  <% if ((preview.total||0) !== (preview.comPis||0)) { %>
+  <div class="alert info">Funcionários sem PIS cadastrado não entram no AFD. Preencha o PIS no cadastro.</div>
+  <% } %>
+  <a class="btn" href="/afd/download?start=<%= start %>&end=<%= end %>">Baixar AFD (.txt)</a>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Empresa (cabeçalho do AFD)</h2>
+  <p class="muted">Os dados da empresa usados no cabeçalho são definidos em <a href="/company">Empresa</a> (razão social, CNPJ/CPF, CEI/CAEPF).</p>
+  <p class="muted">Observação: o registro tipo 7 assinado digitalmente do REP-P depende de hardware/certificado homologado e não é gerado aqui.</p>
+</div>
+<%- include('partials/footer') %>

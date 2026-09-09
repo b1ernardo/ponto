@@ -1,0 +1,31 @@
+<%- include('../partials/header', { title: 'Funcionários' }) %>
+<h1>Funcionários</h1>
+<div class="toolbar">
+  <form method="get" style="display:flex;gap:8px;flex:1">
+    <input name="q" value="<%= q %>" placeholder="Buscar por nome, matrícula ou CPF">
+    <button class="btn sec">Buscar</button>
+  </form>
+  <a class="btn" href="/employees/new">+ Novo funcionário</a>
+</div>
+
+<div class="card tabwrap">
+<table>
+  <tr><th>Nome</th><th>Matrícula</th><th>Setor</th><th>Escala</th><th>Rosto</th><th>Status</th><th></th></tr>
+  <% rows.forEach(e => { %>
+  <tr>
+    <td><%= e.name %></td>
+    <td class="mono"><%= e.registration %></td>
+    <td><%= e.department || '—' %></td>
+    <td class="muted"><%= e.schedule_name || '—' %></td>
+    <td><% if (e.face_descriptor) { %><span class="pill ok"><%= e.face_samples %> amostras</span><% } else { %><span class="pill warn">sem rosto</span><% } %></td>
+    <td><span class="pill <%= e.active ? 'ok' : 'off' %>"><%= e.active ? 'Ativo' : 'Inativo' %></span></td>
+    <td class="right">
+      <a class="btn sm sec" href="/employees/<%= e.id %>/enroll">Rosto</a>
+      <a class="btn sm sec" href="/employees/<%= e.id %>/edit">Editar</a>
+    </td>
+  </tr>
+  <% }) %>
+  <% if (!rows.length) { %><tr><td colspan="7" class="muted">Nenhum funcionário.</td></tr><% } %>
+</table>
+</div>
+<%- include('../partials/footer') %>

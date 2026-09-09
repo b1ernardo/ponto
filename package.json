@@ -1,0 +1,27 @@
+{
+  "name": "relogio-ponto",
+  "version": "1.0.0",
+  "description": "Sistema de relógio de ponto com reconhecimento facial, trava por dispositivo, foto + GPS por batida, relatórios e exportação AFD (Portaria 671/1510).",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js",
+    "models": "node scripts/download-models.mjs"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "pdfkit": "^0.15.1"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
+  }
+}

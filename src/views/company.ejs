@@ -1,0 +1,62 @@
+<%- include('partials/header', { title: 'Empresa' }) %>
+<h1>Empresa e administradores</h1>
+<% if (ok) { %><div class="alert ok">Salvo.</div><% } %>
+
+<div class="card">
+  <h2 style="margin-top:0">Dados da empresa</h2>
+  <form method="post" action="/company">
+    <div class="row">
+      <div style="flex:2"><label>Razão social</label><input name="razao_social" value="<%= company.razao_social %>"></div>
+      <div><label>Tipo</label><select name="tipo_id">
+        <option value="1" <%= company.tipo_id===1?'selected':'' %>>CNPJ</option>
+        <option value="2" <%= company.tipo_id===2?'selected':'' %>>CPF</option>
+      </select></div>
+    </div>
+    <div class="row">
+      <div><label>CNPJ/CPF (só números)</label><input name="cnpj_cpf" value="<%= company.cnpj_cpf %>"></div>
+      <div><label>CEI/CAEPF (opcional)</label><input name="cei_caepf" value="<%= company.cei_caepf %>"></div>
+    </div>
+    <label>Endereço</label><input name="endereco" value="<%= company.endereco %>">
+    <div style="margin-top:14px"><button class="btn">Salvar</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Administradores</h2>
+  <div class="tabwrap"><table>
+    <tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Nova senha</th><th></th></tr>
+    <% admins.forEach(a => { %>
+    <tr>
+      <td><%= a.name %></td><td><%= a.email %></td><td><%= a.role %></td>
+      <td><span class="pill <%= a.active?'ok':'off' %>"><%= a.active?'ativo':'inativo' %></span></td>
+      <td>
+        <form method="post" action="/company/admins/<%= a.id %>/password" style="display:flex;gap:6px">
+          <input type="password" name="password" placeholder="min. 6" style="width:120px">
+          <button class="btn sm sec">OK</button>
+        </form>
+      </td>
+      <td class="right"><form method="post" action="/company/admins/<%= a.id %>/toggle" style="display:inline"><button class="btn sm sec"><%= a.active?'Desativar':'Ativar' %></button></form></td>
+    </tr>
+    <% }) %>
+  </table></div>
+
+  <h3>Novo administrador</h3>
+  <form method="post" action="/company/admins" class="row">
+    <div><label>Nome</label><input name="name" required></div>
+    <div><label>E-mail</label><input type="email" name="email" required></div>
+    <div><label>Senha</label><input type="password" name="password" required></div>
+    <div><label>Perfil</label><select name="role"><option value="admin">admin</option><option value="gestor">gestor</option></select></div>
+    <div style="display:flex;align-items:end"><button class="btn">Criar</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 style="margin-top:0">Auditoria (últimas 50 ações)</h2>
+  <div class="tabwrap"><table>
+    <tr><th>Data</th><th>Admin</th><th>Ação</th><th>Detalhe</th><th>IP</th></tr>
+    <% logs.forEach(l => { %>
+    <tr><td class="mono"><%= l.created_at.replace('T',' ') %></td><td><%= l.admin_name || '—' %></td><td class="mono"><%= l.action %></td><td class="muted"><%= l.detail || '' %></td><td class="muted"><%= l.ip || '' %></td></tr>
+    <% }) %>
+  </table></div>
+</div>
+<%- include('partials/footer') %>

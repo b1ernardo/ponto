@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= typeof title !== 'undefined' ? title : 'Relógio de Ponto' %></title>
+<link rel="stylesheet" href="/public/css/app.css">
+</head>
+<body>
+<% if (typeof admin !== 'undefined' && admin) { %>
+<header class="topbar">
+  <a class="brand" href="/">⏱ Ponto</a>
+  <nav>
+    <a href="/" class="<%= path === '/' ? 'on' : '' %>">Painel</a>
+    <a href="/employees" class="<%= path.startsWith('/employees') ? 'on' : '' %>">Funcionários</a>
+    <a href="/punches" class="<%= path.startsWith('/punches') ? 'on' : '' %>">Batidas</a>
+    <a href="/schedules" class="<%= path.startsWith('/schedules') ? 'on' : '' %>">Escalas</a>
+    <a href="/reports/mirror" class="<%= path.startsWith('/reports') ? 'on' : '' %>">Relatórios</a>
+    <a href="/afd" class="<%= path.startsWith('/afd') ? 'on' : '' %>">AFD</a>
+    <a href="/devices" class="<%= path.startsWith('/devices') ? 'on' : '' %>">Dispositivos</a>
+    <a href="/company" class="<%= path.startsWith('/company') ? 'on' : '' %>">Empresa</a>
+  </nav>
+  <form method="post" action="/logout" class="logout">
+    <span><%= admin.name %></span>
+    <button>Sair</button>
+  </form>
+</header>
+<% } %>
+<main class="wrap">

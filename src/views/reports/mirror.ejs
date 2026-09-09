@@ -1,0 +1,55 @@
+<%- include('../partials/header', { title: 'Espelho de ponto' }) %>
+<h1>Espelho de ponto</h1>
+
+<form method="get" class="toolbar">
+  <div><label>Funcionário</label>
+    <select name="employee_id">
+      <% employees.forEach(e => { %><option value="<%= e.id %>" <%= empId===e.id?'selected':'' %>><%= e.name %></option><% }) %>
+    </select>
+  </div>
+  <div><label>Início</label><input type="date" name="start" value="<%= start %>"></div>
+  <div><label>Fim</label><input type="date" name="end" value="<%= end %>"></div>
+  <div style="display:flex;align-items:end;gap:8px"><button class="btn sec">Ver</button></div>
+</form>
+
+<% if (report) { %>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <b><%= report.employee.name %></b> · <%= report.employee.registration %><br>
+      <span class="muted"><%= report.schedule ? report.schedule.name : 'sem escala' %> · <%= start %> a <%= end %></span>
+    </div>
+    <div>
+      <a class="btn sm sec" href="?employee_id=<%= empId %>&start=<%= start %>&end=<%= end %>&format=pdf">PDF</a>
+      <a class="btn sm sec" href="?employee_id=<%= empId %>&start=<%= start %>&end=<%= end %>&format=csv">CSV</a>
+    </div>
+  </div>
+
+  <div class="grid c4" style="margin:16px 0">
+    <div class="kpi"><b><%= report.totals.workedHm %></b><span>Trabalhado</span></div>
+    <div class="kpi"><b><%= report.totals.balanceHm %></b><span>Saldo (banco de horas)</span></div>
+    <div class="kpi"><b><%= report.totals.overtimeHm %></b><span>Horas extras</span></div>
+    <div class="kpi"><b><%= report.totals.absences %></b><span>Faltas</span></div>
+  </div>
+
+  <div class="tabwrap"><table>
+    <tr><th>Data</th><th>Marcações</th><th>Previsto</th><th>Trab.</th><th>Saldo</th><th>Ocorrências</th></tr>
+    <% report.days.forEach(d => { %>
+    <tr>
+      <td class="mono"><%= d.date.slice(8) %>/<%= d.date.slice(5,7) %> <span class="muted"><%= ['dom','seg','ter','qua','qui','sex','sáb'][d.weekday] %></span></td>
+      <td class="mono"><%= d.punches.map(p => p.punched_at.slice(11,16)).join('  ') || '—' %></td>
+      <td><%= d.expectedHm %></td>
+      <td><%= d.workedHm %></td>
+      <td class="<%= d.balanceMin < 0 ? '' : '' %>"><%= d.balanceHm %></td>
+      <td>
+        <% if (d.isAbsence) { %><span class="pill off">Falta</span><% } %>
+        <% if (d.inconsistent) { %><span class="pill warn">Ímpar</span><% } %>
+        <% if (d.lateMin > 0) { %><span class="pill warn">Atraso <%= Math.round(d.lateMin) %>m</span><% } %>
+        <% if (d.overtimeMin > 0) { %><span class="pill in">Extra <%= Math.round(d.overtimeMin) %>m</span><% } %>
+      </td>
+    </tr>
+    <% }) %>
+  </table></div>
+</div>
+<% } else { %><div class="alert info">Selecione um funcionário.</div><% } %>
+<%- include('../partials/footer') %>
