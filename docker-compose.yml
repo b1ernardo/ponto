@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: "https://github.com/b1ernardo/relogio-ponto.git#main"
+      context: "https://github.com/b1ernardo/ponto.git#main"
     image: relogio-ponto:latest
     labels:
       - traefik.enable=true
