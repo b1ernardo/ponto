@@ -1,5 +1,6 @@
 <%- include('../partials/header', { title: 'Funcionários' }) %>
 <h1>Funcionários</h1>
+<% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
 <div class="toolbar">
   <form method="get" style="display:flex;gap:8px;flex:1">
     <input name="q" value="<%= q %>" placeholder="Buscar por nome, matrícula ou CPF">
@@ -22,6 +23,9 @@
     <td class="right">
       <a class="btn sm sec" href="/employees/<%= e.id %>/enroll">Rosto</a>
       <a class="btn sm sec" href="/employees/<%= e.id %>/edit">Editar</a>
+      <form method="post" action="/employees/<%= e.id %>/delete" style="display:inline">
+        <button class="btn sm danger" onclick="return confirm('Excluir este funcionário?')">Excluir</button>
+      </form>
     </td>
   </tr>
   <% }) %>

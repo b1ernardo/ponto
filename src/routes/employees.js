@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db, audit } from '../db.js';
 import { averageDescriptors } from '../services/face.js';
-import { saveDataUrlImage } from '../services/storage.js';
+import { saveDataUrlImage, deleteUpload } from '../services/storage.js';
 
 export const employeesRouter = Router();
 
@@ -16,7 +16,7 @@ employeesRouter.get('/', (req, res) => {
         `SELECT e.*, s.name schedule_name FROM employees e LEFT JOIN schedules s ON s.id = e.schedule_id
          ORDER BY e.active DESC, e.name`,
       ).all();
-  res.render('employees/list', { rows, q });
+  res.render('employees/list', { rows, q, msg: req.query.msg || null });
 });
 
 employeesRouter.get('/new', (req, res) => {
@@ -106,4 +106,22 @@ employeesRouter.post('/:id/face', (req, res) => {
 employeesRouter.post('/:id/face/delete', (req, res) => {
   db.prepare('UPDATE employees SET face_descriptor = NULL, face_samples = 0 WHERE id = ?').run(req.params.id);
   res.redirect(`/employees/${req.params.id}/edit`);
+});
+
+// Excluir funcionario. Se ja houver batidas, apenas inativa (preserva o historico e o AFD).
+employeesRouter.post('/:id/delete', (req, res) => {
+  const emp = db.prepare('SELECT * FROM employees WHERE id = ?').get(req.params.id);
+  if (!emp) return res.status(404).send('Nao encontrado');
+
+  const punches = db.prepare('SELECT COUNT(*) c FROM punches WHERE employee_id = ?').get(emp.id).c;
+  if (punches > 0) {
+    db.prepare('UPDATE employees SET active = 0, face_descriptor = NULL, face_samples = 0 WHERE id = ?').run(emp.id);
+    audit(req.admin.id, 'employee.deactivate', `${emp.registration} (tem ${punches} batidas; inativado)`, req.ip);
+    return res.redirect('/employees?msg=' + encodeURIComponent(`${emp.name} possui ${punches} batida(s) registrada(s) e nao pode ser excluido. Foi inativado.`));
+  }
+
+  deleteUpload(emp.photo_path);
+  db.prepare('DELETE FROM employees WHERE id = ?').run(emp.id);
+  audit(req.admin.id, 'employee.delete', emp.registration, req.ip);
+  res.redirect('/employees?msg=' + encodeURIComponent(`${emp.name} foi excluido.`));
 });
