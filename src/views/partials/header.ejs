@@ -18,6 +18,8 @@
 <body>
 <% if (typeof admin !== 'undefined' && admin) { %>
 <header class="topbar">
+  <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Abrir menu">
+  <label for="nav-toggle" class="nav-btn" aria-hidden="true">☰</label>
   <a class="brand" href="/">⏱ Ponto</a>
   <nav>
     <a href="/" class="<%= path === '/' ? 'on' : '' %>">Painel</a>
@@ -34,6 +36,7 @@
     <span><%= admin.name %></span>
     <button>Sair</button>
   </form>
+  <label for="nav-toggle" class="nav-backdrop" aria-hidden="true"></label>
 </header>
 <% } %>
 <main class="wrap">
