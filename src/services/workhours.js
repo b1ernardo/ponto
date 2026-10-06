@@ -42,6 +42,7 @@ export function employeeReport(employeeId, start, end) {
     : null;
   const daysJson = sched ? JSON.parse(sched.days_json) : {};
   const tolerance = sched ? sched.tolerance_min : 0;
+  const daysOff = emp.days_off ? emp.days_off.split(',').map(Number) : [];
 
   const rows = db
     .prepare(
@@ -70,7 +71,9 @@ export function employeeReport(employeeId, start, end) {
 
   for (const date of eachDay(start, end)) {
     const wd = weekday(date);
-    const s = scheduleForDay(daysJson, wd);
+    // folga semanal do funcionario: sem jornada esperada nesse dia
+    const dayOff = daysOff.includes(wd);
+    const s = dayOff ? { expectedMin: 0, start: null, end: null } : scheduleForDay(daysJson, wd);
     const punches = byDate[date] || [];
     const isos = punches.map((p) => p.punched_at);
     const { workedMin, pairs, odd, count } = computeWorkedFromPunches(isos);
@@ -110,7 +113,7 @@ export function employeeReport(employeeId, start, end) {
 
     days.push({
       date, weekday: wd, expectedMin, workedMin, balanceMin,
-      lateMin, earlyLeaveMin, overtimeMin, isAbsence, inconsistent, certificate: cert,
+      lateMin, earlyLeaveMin, overtimeMin, isAbsence, inconsistent, certificate: cert, dayOff,
       pairs, punches,
       workedHm: minToHm(workedMin), expectedHm: minToHm(expectedMin), balanceHm: minToHm(balanceMin),
     });

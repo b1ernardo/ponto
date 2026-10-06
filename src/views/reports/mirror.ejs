@@ -44,6 +44,7 @@
       <td class="<%= d.balanceMin < 0 ? '' : '' %>"><%= d.balanceHm %></td>
       <td>
         <% if (d.certificate) { %><span class="pill ok" title="<%= d.certificate.notes || '' %>">Atestado<%= d.certificate.cid ? ' ' + d.certificate.cid : '' %></span><% } %>
+        <% if (d.dayOff) { %><span class="pill off">Folga</span><% } %>
         <% if (d.isAbsence) { %><span class="pill off">Falta</span><% } %>
         <% if (d.inconsistent) { %><span class="pill warn">Ímpar</span><% } %>
         <% if (d.lateMin > 0) { %><span class="pill warn">Atraso <%= Math.round(d.lateMin) %>m</span><% } %>

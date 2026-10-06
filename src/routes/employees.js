@@ -40,6 +40,9 @@ function parseBody(b) {
     department: String(b.department || '').trim(),
     position: String(b.position || '').trim(),
     schedule_id: b.schedule_id ? Number(b.schedule_id) : null,
+    // dias de folga semanal (0=domingo ... 6=sabado), guardado como "0,6"
+    days_off: [...new Set([].concat(b.days_off || []).map(Number))]
+      .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6).sort().join(','),
     active: b.active ? 1 : 0,
   };
 }
@@ -52,8 +55,8 @@ employeesRouter.post('/', (req, res) => {
   }
   try {
     const info = db.prepare(
-      `INSERT INTO employees (name, registration, cpf, pis, department, position, schedule_id, active)
-       VALUES (@name, @registration, @cpf, @pis, @department, @position, @schedule_id, @active)`,
+      `INSERT INTO employees (name, registration, cpf, pis, department, position, schedule_id, days_off, active)
+       VALUES (@name, @registration, @cpf, @pis, @department, @position, @schedule_id, @days_off, @active)`,
     ).run(d);
     audit(req.admin.id, 'employee.create', d.registration, req.ip);
     res.redirect(`/employees/${info.lastInsertRowid}/enroll`);
@@ -70,7 +73,7 @@ employeesRouter.post('/:id', (req, res) => {
   try {
     db.prepare(
       `UPDATE employees SET name=@name, registration=@registration, cpf=@cpf, pis=@pis,
-       department=@department, position=@position, schedule_id=@schedule_id, active=@active WHERE id=@id`,
+       department=@department, position=@position, schedule_id=@schedule_id, days_off=@days_off, active=@active WHERE id=@id`,
     ).run({ ...d, id: emp.id });
     audit(req.admin.id, 'employee.update', d.registration, req.ip);
     res.redirect('/employees');

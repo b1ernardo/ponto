@@ -111,6 +111,11 @@ CREATE TABLE IF NOT EXISTS certificates (
 CREATE INDEX IF NOT EXISTS idx_cert_emp_date ON certificates(employee_id, start_date, end_date);
 `);
 
+// Migracao: dias de folga semanal do funcionario ("0,6" = domingo e sabado)
+if (!db.prepare('PRAGMA table_info(employees)').all().some((c) => c.name === 'days_off')) {
+  db.exec(`ALTER TABLE employees ADD COLUMN days_off TEXT NOT NULL DEFAULT ''`);
+}
+
 // Linha unica da empresa
 db.exec(`INSERT INTO company (id) VALUES (1) ON CONFLICT(id) DO NOTHING;`);
 // Contador de NSR

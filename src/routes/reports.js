@@ -37,7 +37,7 @@ reportsRouter.get('/mirror', (req, res) => {
       report.days.map((d) => [
         d.date, d.expectedHm, d.workedHm, d.balanceHm, minToHm(d.lateMin), minToHm(d.overtimeMin),
         d.punches.map((p) => p.punched_at.slice(11, 16)).join(' '),
-        [d.certificate ? 'ATESTADO' : '', d.isAbsence ? 'FALTA' : '', d.inconsistent ? 'INCONSISTENTE' : ''].filter(Boolean).join(' '),
+        [d.certificate ? 'ATESTADO' : '', d.dayOff ? 'FOLGA' : '', d.isAbsence ? 'FALTA' : '', d.inconsistent ? 'INCONSISTENTE' : ''].filter(Boolean).join(' '),
       ]));
   }
 

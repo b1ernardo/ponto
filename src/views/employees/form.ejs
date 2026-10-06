@@ -32,6 +32,18 @@
       </label>
     </div>
   </div>
+  <div style="margin-top:12px">
+    <label>Dia(s) de folga</label>
+    <% const daysOff = emp && emp.days_off ? emp.days_off.split(',') : []; %>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <% ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].forEach((n, i) => { %>
+      <label style="display:flex;gap:6px;align-items:center;color:var(--ink)">
+        <input type="checkbox" name="days_off" value="<%= i %>" <%= daysOff.includes(String(i)) ? 'checked' : '' %>> <%= n %>
+      </label>
+      <% }) %>
+    </div>
+    <p class="muted" style="margin:6px 0 0">Nos dias de folga não há jornada esperada: não conta falta nem atraso, e o que for trabalhado entra como hora extra.</p>
+  </div>
 
   <div style="margin-top:18px;display:flex;gap:10px">
     <button class="btn"><%= emp ? 'Salvar' : 'Salvar e cadastrar rosto' %></button>
