@@ -29,6 +29,7 @@ export function identify(descriptor) {
     .all();
 
   let best = null;
+  let second = null;
   for (const row of rows) {
     let stored;
     try {
@@ -38,9 +39,16 @@ export function identify(descriptor) {
     }
     if (!Array.isArray(stored) || stored.length !== 128) continue;
     const distance = euclidean(descriptor, stored);
-    if (!best || distance < best.distance) best = { employee: row, distance };
+    if (!best || distance < best.distance) {
+      second = best;
+      best = { employee: row, distance };
+    } else if (!second || distance < second.distance) {
+      second = { employee: row, distance };
+    }
   }
 
-  if (best && best.distance <= config.faceMatchThreshold) return best;
-  return null;
+  if (!best || best.distance > config.faceMatchThreshold) return null;
+  // ambiguo: outro funcionario quase tao proximo quanto o melhor -> nao arrisca
+  if (second && second.distance - best.distance < config.faceMatchMargin) return null;
+  return best;
 }

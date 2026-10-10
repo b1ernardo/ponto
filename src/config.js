@@ -18,6 +18,7 @@ export const config = {
   dataDir: abs(process.env.DATA_DIR, './data'),
   uploadDir: abs(process.env.UPLOAD_DIR, './data/uploads'),
   faceMatchThreshold: parseFloat(process.env.FACE_MATCH_THRESHOLD || '0.52'),
+  faceMatchMargin: parseFloat(process.env.FACE_MATCH_MARGIN || '0.05'),
   faceModelUrl: process.env.FACE_MODEL_URL || 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/',
   punchMinIntervalSeconds: parseInt(process.env.PUNCH_MIN_INTERVAL_SECONDS || '60', 10),
   seedAdmin: {

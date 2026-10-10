@@ -30,16 +30,51 @@ window.FaceKit = (function () {
     return stream;
   }
 
-  const opts = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+  const opts = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 });
 
-  /** Retorna { descriptor:[128], detection } ou null se nenhum rosto nítido. */
+  /**
+   * Retorna { descriptor:[128], detection, score, box, faceRatio } ou null se nenhum rosto.
+   * faceRatio = largura do rosto / largura do quadro (rosto pequeno gera descritor ruim).
+   */
   async function detectOnce(videoEl) {
     const res = await faceapi
       .detectSingleFace(videoEl, opts())
       .withFaceLandmarks()
       .withFaceDescriptor();
     if (!res) return null;
-    return { descriptor: Array.from(res.descriptor), detection: res.detection };
+    const box = res.detection.box;
+    return {
+      descriptor: Array.from(res.descriptor),
+      detection: res.detection,
+      score: res.detection.score || 0,
+      box: { x: box.x, y: box.y, width: box.width, height: box.height },
+      faceRatio: videoEl.videoWidth ? box.width / videoEl.videoWidth : 0,
+    };
+  }
+
+  /** Distância euclidiana entre dois descritores. */
+  function distance(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; sum += d * d; }
+    return Math.sqrt(sum);
+  }
+
+  /** Média de vários descritores (reduz o ruído de um frame isolado). */
+  function average(list) {
+    const out = new Array(list[0].length).fill(0);
+    for (const d of list) for (let i = 0; i < out.length; i++) out[i] += d[i];
+    return out.map((v) => v / list.length);
+  }
+
+  /** Recorte quadrado do rosto (com margem) como dataURL JPEG. */
+  function snapshotFace(videoEl, box, size = 320) {
+    const side = Math.min(Math.max(box.width, box.height) * 1.7, videoEl.videoWidth, videoEl.videoHeight);
+    const sx = Math.min(Math.max(0, box.x + box.width / 2 - side / 2), videoEl.videoWidth - side);
+    const sy = Math.min(Math.max(0, box.y + box.height / 2 - side / 2), videoEl.videoHeight - side);
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    c.getContext('2d').drawImage(videoEl, sx, sy, side, side, 0, 0, size, size);
+    return c.toDataURL('image/jpeg', 0.85);
   }
 
   /** Captura JPEG do frame atual como dataURL (orientação real, sem espelho). */
@@ -52,5 +87,5 @@ window.FaceKit = (function () {
     return c.toDataURL('image/jpeg', 0.8);
   }
 
-  return { loadModels, startCamera, detectOnce, snapshot };
+  return { loadModels, startCamera, detectOnce, snapshot, snapshotFace, distance, average };
 })();

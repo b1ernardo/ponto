@@ -1,6 +1,6 @@
 <%- include('../partials/header', { title: 'Cadastrar rosto' }) %>
 <h1>Cadastrar rosto — <%= emp.name %></h1>
-<p class="sub">Matrícula <%= emp.registration %>. Capture de 3 a 5 amostras com boa iluminação, olhando para a câmera.</p>
+<p class="sub">Matrícula <%= emp.registration %>. Capture de 3 a 5 amostras com boa iluminação, rosto próximo e olhando para a câmera.</p>
 
 <div class="card">
   <div class="videobox">
@@ -26,6 +26,8 @@ const EMP_ID = <%= emp.id %>;
 const video = document.getElementById('video');
 const msg = document.getElementById('msg');
 const samples = [];
+const MIN_SAMPLES = 3;
+let facePhoto = null; // recorte do rosto da 1a amostra (é a foto mostrada no kiosk)
 
 function setMsg(t, cls) { msg.textContent = t; msg.className = 'alert ' + (cls || 'info'); }
 
@@ -44,19 +46,30 @@ document.getElementById('capture').addEventListener('click', async () => {
   setMsg('Detectando…');
   const r = await FaceKit.detectOnce(video);
   if (!r) { setMsg('Nenhum rosto detectado. Tente novamente.', 'err'); return; }
+  // amostra ruim estraga o cadastro: exige rosto nítido, próximo e coerente com as anteriores
+  if (r.score < 0.7) { setMsg('Rosto pouco nítido. Melhore a iluminação e olhe para a câmera.', 'err'); return; }
+  if (r.faceRatio < 0.25) { setMsg('Rosto muito longe. Aproxime-se da câmera.', 'err'); return; }
+  if (samples.length && FaceKit.distance(r.descriptor, samples[0]) > 0.45) {
+    setMsg('Amostra muito diferente das anteriores (outra pessoa ou imagem ruim). Tente novamente.', 'err');
+    return;
+  }
   samples.push(r.descriptor);
+  const shot = FaceKit.snapshotFace(video, r.box, 320);
+  if (!facePhoto) facePhoto = shot;
   const img = document.createElement('img');
-  img.src = FaceKit.snapshot(video, 120);
+  img.src = shot;
   img.width = 90; img.style.borderRadius = '8px';
   document.getElementById('thumbs').appendChild(img);
   document.getElementById('count').textContent = samples.length;
-  document.getElementById('save').disabled = samples.length < 1;
-  setMsg(samples.length + ' amostra(s) capturada(s).', 'ok');
+  document.getElementById('save').disabled = samples.length < MIN_SAMPLES;
+  setMsg(samples.length < MIN_SAMPLES
+    ? samples.length + ' amostra(s). Capture pelo menos ' + MIN_SAMPLES + ', variando levemente a posição do rosto.'
+    : samples.length + ' amostra(s) capturada(s). Pode salvar.', 'ok');
 });
 
 document.getElementById('save').addEventListener('click', async () => {
   setMsg('Salvando…');
-  const photo = FaceKit.snapshot(video, 320);
+  const photo = facePhoto; // foto da própria amostra, não de quem estiver na câmera ao salvar
   const res = await fetch('/employees/' + EMP_ID + '/face', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ descriptors: samples, photo }),

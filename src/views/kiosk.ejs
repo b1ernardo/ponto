@@ -78,7 +78,9 @@ let state = 'idle';         // idle | scanning | identifying | confirming | subm
 let pending = null;         // { employee, directionLabel } aguardando confirmação
 let countTimer = null;
 let pauseUntil = 0;         // pausa o scanner (deixa a pessoa sair de frente da câmera)
-let stableHits = 0;         // frames consecutivos com rosto nítido
+let frames = [];            // descritores de frames consecutivos com rosto nítido e próximo
+const FRAMES_NEEDED = 3;    // a média de 3 frames é bem mais estável que um frame só
+const MIN_FACE_RATIO = 0.22; // rosto precisa ocupar ao menos ~1/5 da largura do quadro
 
 function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'status ' + (cls || ''); }
 
@@ -111,7 +113,7 @@ function closeModal() {
   clearCount();
   modal.hidden = true;
   pending = null;
-  stableHits = 0;
+  frames = [];
   pauseUntil = Date.now() + 3500;
   state = 'scanning';
   setStatus('Aproxime o rosto para registrar o ponto');
@@ -186,18 +188,23 @@ async function loop() {
   if (state === 'scanning' && Date.now() > pauseUntil) {
     try {
       const r = await FaceKit.detectOnce(video);
-      const score = r && r.detection ? (r.detection.score || r.detection._score || 0) : 0;
-      if (r && score >= 0.6) {
-        stableHits++;
-        // só consulta o servidor depois de 2 frames seguidos com rosto nítido
-        if (stableHits >= 2 && state === 'scanning') {
-          stableHits = 0;
-          await identify(r.descriptor);
+      if (r && r.score >= 0.6 && r.faceRatio < MIN_FACE_RATIO) {
+        frames = [];
+        setStatus('Aproxime mais o rosto da câmera');
+      } else if (r && r.score >= 0.6) {
+        // frame que destoa dos anteriores (movimento, outra pessoa) reinicia a sequência
+        if (frames.length && FaceKit.distance(r.descriptor, frames[0]) > 0.4) frames = [];
+        frames.push(r.descriptor);
+        // só consulta o servidor com a média de alguns frames seguidos e coerentes
+        if (frames.length >= FRAMES_NEEDED && state === 'scanning') {
+          const avg = FaceKit.average(frames);
+          frames = [];
+          await identify(avg);
         }
       } else {
-        stableHits = 0;
+        frames = [];
       }
-    } catch (e) { stableHits = 0; }
+    } catch (e) { frames = []; }
   }
   requestAnimationFrame(() => setTimeout(loop, 350));
 }
@@ -257,11 +264,16 @@ async function confirmPunch() {
       return;
     }
     const photo = FaceKit.snapshot(video, 480);
+    // segundo frame para a média, se for coerente com o primeiro
+    const shot2 = await FaceKit.detectOnce(video);
+    const descriptor = shot2 && FaceKit.distance(shot.descriptor, shot2.descriptor) <= 0.4
+      ? FaceKit.average([shot.descriptor, shot2.descriptor])
+      : shot.descriptor;
     res = await fetch('/api/punch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-device-token': token },
       body: JSON.stringify({
-        descriptor: shot.descriptor,
+        descriptor,
         photo,
         expectedEmployeeId: emp.id,
         ...(coords || {}),
