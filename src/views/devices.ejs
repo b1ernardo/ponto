@@ -1,28 +1,32 @@
 <%- include('partials/header', { title: 'Dispositivos' }) %>
 <h1>Dispositivos autorizados</h1>
-<p class="sub">Somente celulares/tablets com um token válido podem abrir a tela de bater ponto.</p>
+<p class="sub">Somente celulares/tablets autorizados podem abrir a tela de bater ponto.</p>
 
-<% if (justCreated) { const d = rows.find(r => r.id == justCreated); if (d) { %>
+<% if (justCreated) { const d = rows.find(r => r.id == justCreated); if (d && d.pair_minutes_left) { %>
 <div class="alert ok">
-  <b>Dispositivo criado.</b> No celular da empresa, abra <span class="mono"><%= baseUrl %>/kiosk</span> e cole este token:
-  <div class="mono" style="margin-top:8px;word-break:break-all;background:#fff;padding:8px;border-radius:6px"><%= d.token %></div>
+  <b><%= d.name %>:</b> no aparelho, abra <span class="mono"><%= baseUrl %>/kiosk</span> e digite o código:
+  <div class="mono" style="margin-top:8px;font-size:34px;font-weight:700;letter-spacing:10px;background:#fff;padding:8px 14px;border-radius:6px;display:inline-block"><%= d.pair_code %></div>
+  <div class="muted" style="margin-top:6px">Vale por <%= d.pair_minutes_left %> minuto(s) e só pode ser usado uma vez.</div>
 </div>
 <% } } %>
 
 <div class="card">
   <form method="post" action="/devices" class="row">
     <div style="flex:2"><label>Nome do dispositivo</label><input name="name" placeholder="Ex.: Celular Portaria" required></div>
-    <div style="display:flex;align-items:end"><button class="btn">Gerar token</button></div>
+    <div style="display:flex;align-items:end"><button class="btn">Gerar código</button></div>
   </form>
 </div>
 
 <div class="card tabwrap">
 <table>
-  <tr><th>Nome</th><th>Token</th><th>Último acesso</th><th>Status</th><th></th></tr>
+  <tr><th>Nome</th><th>Código</th><th>Último acesso</th><th>Status</th><th></th></tr>
   <% rows.forEach(d => { %>
   <tr>
     <td><%= d.name %></td>
-    <td class="mono" style="max-width:260px;overflow:hidden;text-overflow:ellipsis"><%= d.token %></td>
+    <td>
+      <% if (d.pair_minutes_left) { %><span class="mono" style="font-weight:700;letter-spacing:3px"><%= d.pair_code %></span> <small class="muted">(<%= d.pair_minutes_left %> min)</small>
+      <% } else { %><form method="post" action="/devices/<%= d.id %>/code" style="display:inline"><button class="btn sm sec">Novo código</button></form><% } %>
+    </td>
     <td class="muted"><%= d.last_seen ? d.last_seen.replace('T',' ') : '—' %><br><small><%= d.last_ip || '' %></small></td>
     <td><span class="pill <%= d.active ? 'ok' : 'off' %>"><%= d.active ? 'Ativo' : 'Bloqueado' %></span></td>
     <td class="right">

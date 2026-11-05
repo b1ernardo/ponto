@@ -19,8 +19,9 @@
 <div class="kiosk">
   <div id="setup" class="setup" hidden>
     <h2 style="margin-top:0">Autorizar dispositivo</h2>
-    <p class="muted">Cole o token gerado em <b>Dispositivos</b> no painel administrativo.</p>
-    <input id="tokenInput" placeholder="token do dispositivo">
+    <p class="muted">Digite o código de 4 dígitos gerado em <b>Dispositivos</b> no painel administrativo.</p>
+    <input id="tokenInput" placeholder="0000" inputmode="numeric" autocomplete="off"
+      style="font-size:28px;text-align:center;letter-spacing:10px">
     <button id="tokenSave" class="btn" style="width:100%;margin-top:12px">Salvar</button>
     <p id="setupMsg" class="muted"></p>
   </div>
@@ -98,11 +99,35 @@ if (navigator.geolocation) {
   );
 }
 
-document.getElementById('tokenSave').addEventListener('click', () => {
+document.getElementById('tokenSave').addEventListener('click', async () => {
   const v = document.getElementById('tokenInput').value.trim();
+  const setupMsg = document.getElementById('setupMsg');
   if (!v) return;
-  localStorage.setItem(LS_KEY, v); token = v;
-  location.reload();
+  // token longo antigo continua aceito; 4 dígitos = código de pareamento
+  if (!/^\d{4}$/.test(v)) {
+    localStorage.setItem(LS_KEY, v); token = v;
+    location.reload();
+    return;
+  }
+  setupMsg.textContent = 'Verificando…';
+  try {
+    const res = await fetch('/api/device/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: v }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setupMsg.textContent = res.status === 429
+        ? 'Muitas tentativas. Aguarde alguns minutos.'
+        : 'Código inválido ou expirado. Gere outro no painel.';
+      return;
+    }
+    localStorage.setItem(LS_KEY, data.token); token = data.token;
+    location.reload();
+  } catch (e) {
+    setupMsg.textContent = 'Falha de conexão. Tente novamente.';
+  }
 });
 
 // ---------- modal ----------

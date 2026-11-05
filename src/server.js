@@ -11,7 +11,7 @@ import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { employeesRouter } from './routes/employees.js';
 import { schedulesRouter } from './routes/schedules.js';
-import { devicesRouter } from './routes/devices.js';
+import { devicesRouter, pairRouter } from './routes/devices.js';
 import { punchRouter } from './routes/punch.js';
 import { reportsRouter } from './routes/reports.js';
 import { afdRouter } from './routes/afd.js';
@@ -72,6 +72,7 @@ app.get('/kiosk', (req, res) => {
   res.render('kiosk');
 });
 app.use(punchRouter); // /api/punch (device token) + /punches (admin)
+app.use(pairRouter); // /api/device/pair (codigo de 4 digitos -> token)
 
 // ---- Autenticacao admin ----
 app.use(authRouter);

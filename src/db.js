@@ -116,6 +116,11 @@ if (!db.prepare('PRAGMA table_info(employees)').all().some((c) => c.name === 'da
   db.exec(`ALTER TABLE employees ADD COLUMN days_off TEXT NOT NULL DEFAULT ''`);
 }
 
+// Migracao: codigo de pareamento de 4 digitos (temporario, uso unico) dos dispositivos
+const deviceCols = db.prepare('PRAGMA table_info(devices)').all().map((c) => c.name);
+if (!deviceCols.includes('pair_code')) db.exec('ALTER TABLE devices ADD COLUMN pair_code TEXT');
+if (!deviceCols.includes('pair_expires')) db.exec('ALTER TABLE devices ADD COLUMN pair_expires TEXT');
+
 // Linha unica da empresa
 db.exec(`INSERT INTO company (id) VALUES (1) ON CONFLICT(id) DO NOTHING;`);
 // Contador de NSR
