@@ -1,6 +1,7 @@
 <%- include('partials/header', { title: 'Dispositivos' }) %>
 <h1>Dispositivos autorizados</h1>
 <p class="sub">Somente celulares/tablets autorizados podem abrir a tela de bater ponto.</p>
+<% if (msg) { %><div class="alert ok"><%= msg %></div><% } %>
 
 <% if (justCreated) { const d = rows.find(r => r.id == justCreated); if (d && d.pair_minutes_left) { %>
 <div class="alert ok">

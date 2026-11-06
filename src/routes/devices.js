@@ -31,7 +31,7 @@ devicesRouter.get('/', (req, res) => {
   ).all();
   const proto = req.get('x-forwarded-proto') || req.protocol;
   const baseUrl = `${proto}://${req.get('host')}`;
-  res.render('devices', { rows, baseUrl, justCreated: req.query.novo || null });
+  res.render('devices', { rows, baseUrl, justCreated: req.query.novo || null, msg: req.query.msg || null });
 });
 
 devicesRouter.post('/', (req, res) => {
@@ -58,10 +58,20 @@ devicesRouter.post('/:id/toggle', (req, res) => {
   res.redirect('/devices');
 });
 
+// Excluir dispositivo. Se ja houver batidas feitas nele, apenas bloqueia (preserva o historico).
 devicesRouter.post('/:id/delete', (req, res) => {
-  db.prepare('DELETE FROM devices WHERE id = ?').run(req.params.id);
-  audit(req.admin.id, 'device.delete', req.params.id, req.ip);
-  res.redirect('/devices');
+  const dev = db.prepare('SELECT id, name FROM devices WHERE id = ?').get(req.params.id);
+  if (!dev) return res.redirect('/devices');
+  const punches = db.prepare('SELECT COUNT(*) c FROM punches WHERE device_id = ?').get(dev.id).c;
+  if (punches > 0) {
+    db.prepare('UPDATE devices SET active = 0, pair_code = NULL, pair_expires = NULL WHERE id = ?').run(dev.id);
+    audit(req.admin.id, 'device.deactivate', `${dev.name} (tem ${punches} batidas; bloqueado)`, req.ip);
+    return res.redirect('/devices?msg=' + encodeURIComponent(
+      `${dev.name} possui ${punches} batida(s) registrada(s) e nao pode ser excluido. Foi bloqueado.`));
+  }
+  db.prepare('DELETE FROM devices WHERE id = ?').run(dev.id);
+  audit(req.admin.id, 'device.delete', dev.name, req.ip);
+  res.redirect('/devices?msg=' + encodeURIComponent(`${dev.name} foi excluido.`));
 });
 
 // ---------- pareamento pelo kiosk (publico, sem login) ----------
