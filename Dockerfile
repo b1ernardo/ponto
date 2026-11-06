@@ -2,6 +2,9 @@
 FROM node:24-alpine
 
 ENV NODE_ENV=production
+# Batidas sao gravadas no horario local do servidor: sem isso o container roda em UTC (+3h)
+ENV TZ=America/Sao_Paulo
+RUN apk add --no-cache tzdata
 WORKDIR /app
 
 # Dependências (cache de camada)

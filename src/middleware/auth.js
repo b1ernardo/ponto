@@ -31,7 +31,7 @@ export function requireDevice(req, res, next) {
   if (!token) return res.status(401).json({ error: 'dispositivo nao informado' });
   const device = db.prepare('SELECT * FROM devices WHERE token = ? AND active = 1').get(token);
   if (!device) return res.status(403).json({ error: 'dispositivo nao autorizado' });
-  db.prepare('UPDATE devices SET last_seen = datetime(\'now\'), last_ip = ? WHERE id = ?')
+  db.prepare('UPDATE devices SET last_seen = datetime(\'now\', \'localtime\'), last_ip = ? WHERE id = ?')
     .run(req.ip, device.id);
   req.device = device;
   next();
