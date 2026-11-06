@@ -141,6 +141,24 @@ punchRouter.post('/punches', requireAuth, (req, res) => {
   res.redirect(`/punches?date=${date}`);
 });
 
+// Alterar data/hora de uma batida. O horario original fica guardado (so na 1a alteracao).
+punchRouter.post('/punches/:id/edit', requireAuth, (req, res) => {
+  const p = db.prepare('SELECT * FROM punches WHERE id = ?').get(req.params.id);
+  const { date, time } = req.body;
+  if (!p || !/^\d{4}-\d{2}-\d{2}$/.test(date || '') || !/^\d{2}:\d{2}(:\d{2})?$/.test(time || '')) {
+    return res.status(400).send('Dados invalidos');
+  }
+  const punchedAt = `${date}T${time.length === 5 ? time + ':00' : time}`;
+  if (punchedAt !== p.punched_at) {
+    db.prepare(
+      `UPDATE punches SET punched_at = ?, original_punched_at = COALESCE(original_punched_at, punched_at),
+       edited_by = ?, edited_at = datetime('now', 'localtime') WHERE id = ?`,
+    ).run(punchedAt, req.admin.id, p.id);
+    audit(req.admin.id, 'punch.edit', `nsr ${p.nsr}: ${p.punched_at} -> ${punchedAt}`, req.ip);
+  }
+  res.redirect(`/punches?date=${date}`);
+});
+
 punchRouter.post('/punches/:id/delete', requireAuth, (req, res) => {
   const p = db.prepare('SELECT * FROM punches WHERE id = ?').get(req.params.id);
   if (p) {

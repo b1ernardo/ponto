@@ -121,6 +121,12 @@ const deviceCols = db.prepare('PRAGMA table_info(devices)').all().map((c) => c.n
 if (!deviceCols.includes('pair_code')) db.exec('ALTER TABLE devices ADD COLUMN pair_code TEXT');
 if (!deviceCols.includes('pair_expires')) db.exec('ALTER TABLE devices ADD COLUMN pair_expires TEXT');
 
+// Migracao: correcao manual de batida guarda o horario original e quem alterou
+const punchCols = db.prepare('PRAGMA table_info(punches)').all().map((c) => c.name);
+if (!punchCols.includes('original_punched_at')) db.exec('ALTER TABLE punches ADD COLUMN original_punched_at TEXT');
+if (!punchCols.includes('edited_by')) db.exec('ALTER TABLE punches ADD COLUMN edited_by INTEGER REFERENCES admins(id)');
+if (!punchCols.includes('edited_at')) db.exec('ALTER TABLE punches ADD COLUMN edited_at TEXT');
+
 // Linha unica da empresa
 db.exec(`INSERT INTO company (id) VALUES (1) ON CONFLICT(id) DO NOTHING;`);
 // Contador de NSR

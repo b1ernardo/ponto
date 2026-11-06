@@ -36,13 +36,22 @@
   <% rows.forEach(r => { %>
   <tr>
     <td class="mono"><%= r.nsr %></td>
-    <td class="mono"><%= r.punched_at.slice(11,16) %></td>
+    <td class="mono">
+      <%= r.punched_at.slice(11,16) %>
+      <% if (r.original_punched_at) { %><span class="pill warn" title="Original: <%= r.original_punched_at.replace('T',' ') %> · alterado em <%= r.edited_at %>">editado</span><% } %>
+      <form method="post" action="/punches/<%= r.id %>/edit" id="edit-<%= r.id %>" hidden style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <input type="date" name="date" value="<%= r.punched_at.slice(0,10) %>" required style="width:auto">
+        <input type="time" name="time" value="<%= r.punched_at.slice(11,16) %>" required style="width:auto">
+        <button class="btn sm">Salvar</button>
+      </form>
+    </td>
     <td><%= r.emp_name %></td>
     <td><span class="pill <%= r.direction==='IN'?'in':r.direction==='OUT'?'out':'' %>"><%= r.direction==='IN'?'Entrada':r.direction==='OUT'?'Saída':'—' %></span></td>
     <td class="muted"><%= r.source %></td>
     <td class="muted"><% if (r.latitude) { %><a target="_blank" href="https://maps.google.com/?q=<%= r.latitude %>,<%= r.longitude %>">ver</a><% } else { %>—<% } %></td>
     <td><% if (r.photo_path) { %><a target="_blank" href="<%= r.photo_path %>">📷</a><% } else { %>—<% } %></td>
-    <td class="right"><form method="post" action="/punches/<%= r.id %>/delete" style="display:inline"><button class="btn sm danger" onclick="return confirm('Excluir batida NSR <%= r.nsr %>?')">Excluir</button></form></td>
+    <td class="right"><button type="button" class="btn sm sec" onclick="const f=document.getElementById('edit-<%= r.id %>');f.hidden=!f.hidden">Alterar</button>
+      <form method="post" action="/punches/<%= r.id %>/delete" style="display:inline"><button class="btn sm danger" onclick="return confirm('Excluir batida NSR <%= r.nsr %>?')">Excluir</button></form></td>
   </tr>
   <% }) %>
   <% if (!rows.length) { %><tr><td colspan="8" class="muted">Nenhuma batida.</td></tr><% } %>
